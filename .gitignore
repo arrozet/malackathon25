@@ -65,3 +65,4 @@ htmlcov/
 # Distribution
 *.zip
 *.tar.gz
+data/SaludMental.xls
