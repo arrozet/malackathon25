@@ -73,6 +73,10 @@ class Config:
     # Application Settings
     APP_ENV: str = os.getenv("APP_ENV", "prod")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+    CORS_ORIGINS: str = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    )
     
     @classmethod
     def validate(cls) -> None:
@@ -123,7 +127,19 @@ class Config:
             "ORACLE_WALLET_PASSWORD": "***" if cls.ORACLE_WALLET_PASSWORD else "NOT SET",
             "APP_ENV": cls.APP_ENV,
             "DEBUG": cls.DEBUG,
+            "CORS_ORIGINS": cls.CORS_ORIGINS,
         }
+
+    @classmethod
+    def get_cors_origins(cls) -> list[str]:
+        """
+        Parses the configured CORS origins into a list.
+        
+        Returns:
+            list[str]: Origins allowed to access the API via CORS.
+        """
+
+        return [origin.strip() for origin in cls.CORS_ORIGINS.split(",") if origin.strip()]
 
 
 # Create a global config instance

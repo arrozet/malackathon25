@@ -5,8 +5,10 @@ This is the main application module that initializes FastAPI and manages
 the database connection lifecycle.
 """
 
+from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 from typing import Dict, Any
@@ -17,8 +19,8 @@ from app.back.db import (
     close_connection_pool,
     test_connection,
     get_pool_status,
-    execute_query,
 )
+from app.back.schemas import InsightSummary
 
 # Configure logging
 logging.basicConfig(
@@ -82,6 +84,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Configure CORS
+allowed_origins = config.get_cors_origins()
+if allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
 
 @app.get("/")
 async def root() -> Dict[str, str]:
@@ -137,48 +150,100 @@ async def health_check() -> Dict[str, Any]:
         )
 
 
-@app.get("/db/test")
-async def test_db_query() -> Dict[str, Any]:
+@app.get("/insights", response_model=InsightSummary)
+async def get_prototype_insights() -> InsightSummary:
     """
-    Test database query endpoint.
+    Retrieve a curated summary of mock insights for the Brain landing page.
     
-    Executes a simple test query to verify database connectivity
-    and query execution capabilities.
+    The current implementation returns static values that allow the frontend to
+    render a realistic dashboard while the Oracle integration is configured.
+    Once the database is available, this handler will transform live query
+    results into the same schema.
     
     Returns:
-        dict: Test query results with timestamp from database.
-    
-    Raises:
-        HTTPException: If query execution fails (500 Internal Server Error).
+        InsightSummary: Structured insight payload for the frontend.
     """
+
+    database_status = False
     try:
-        # Execute a simple test query
-        result = execute_query(
-            "SELECT SYSDATE, USER, SYS_CONTEXT('USERENV', 'DB_NAME') as DB_NAME FROM DUAL"
-        )
-        
-        if result:
-            row = result[0]
-            return {
-                "status": "success",
-                "query": "Test query executed successfully",
-                "result": {
-                    "timestamp": str(row[0]),
-                    "user": row[1],
-                    "database": row[2],
-                }
-            }
-        else:
-            raise HTTPException(
-                status_code=500,
-                detail="Query returned no results"
-            )
-    except Exception as e:
-        logger.error(f"Test query failed: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Test query failed: {str(e)}"
-        )
+        database_status = test_connection()
+    except Exception:
+        logger.warning("Oracle database not reachable for prototype insights.")
+
+    generated_at = datetime.now(timezone.utc)
+
+    return InsightSummary(
+        generated_at=generated_at,
+        sample_period="Q1 2024",
+        highlight_phrases=[
+            "Admisiones psiquiátricas estables con ligero aumento en mujeres jóvenes",
+            "Estancias medias reducidas 1.4 días gracias a intervenciones tempranas",
+            "Readmisiones concentradas en trastornos afectivos severos",
+        ],
+        metric_sections=[
+            {
+                "title": "Panorama general",
+                "metrics": [
+                    {
+                        "title": "Admisiones totales",
+                        "value": "1,842",
+                        "description": "Pacientes únicos ingresados en la red hospitalaria durante el periodo analizado.",
+                    },
+                    {
+                        "title": "Estancia media",
+                        "value": "7.6 días",
+                        "description": "Promedio de días desde ingreso hasta alta, excluyendo hospitalizaciones parciales.",
+                    },
+                    {
+                        "title": "Readmisiones 30 días",
+                        "value": "12.4%",
+                        "description": "Porcentaje de pacientes reingresados en menos de un mes tras el alta.",
+                    },
+                ],
+            },
+            {
+                "title": "Perspectiva por género y edad",
+                "metrics": [
+                    {
+                        "title": "Mujeres 18-29 años",
+                        "value": "+6.2%",
+                        "description": "Variación interanual en admisiones, destacando trastornos de ansiedad severa.",
+                    },
+                    {
+                        "title": "Varones >60 años",
+                        "value": "-3.8%",
+                        "description": "Descenso en ingresos por episodios depresivos mayores tras programas ambulatorios.",
+                    },
+                    {
+                        "title": "Estancia media U. agudos",
+                        "value": "5.1 días",
+                        "description": "Segmento con mayor rotación, clave para planificar recursos críticos.",
+                    },
+                ],
+            },
+            {
+                "title": "Factores de riesgo a vigilar",
+                "metrics": [
+                    {
+                        "title": "Intentos de suicidio previos",
+                        "value": "27%",
+                        "description": "Proporción de pacientes con historial de intentos, indicador de alerta prioritario.",
+                    },
+                    {
+                        "title": "Tiempo a primera cita",
+                        "value": "18 días",
+                        "description": "Retrasos en seguimiento ambulatorio post alta, foco de mejora en coordinación.",
+                    },
+                    {
+                        "title": "Cobertura terapias familiares",
+                        "value": "41%",
+                        "description": "Acceso actual a programas de acompañamiento familiar durante la hospitalización.",
+                    },
+                ],
+            },
+        ],
+        database_connected=database_status,
+    )
 
 
 @app.get("/db/pool-status")

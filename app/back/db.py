@@ -45,9 +45,16 @@ def initialize_connection_pool(
     """
     global _connection_pool
     
-    # Validate configuration before attempting connection
-    config.validate()
-    
+    try:
+        # Validate configuration before attempting connection
+        config.validate()
+    except ValueError as config_error:
+        logger.warning(
+            "Skipping Oracle connection pool initialization: %s",
+            config_error,
+        )
+        return
+
     try:
         logger.info("Initializing Oracle connection pool...")
         logger.info(f"Connecting to DSN: {config.ORACLE_DSN}")
@@ -165,6 +172,10 @@ def test_connection() -> bool:
         RuntimeError: If connection pool has not been initialized.
         oracledb.Error: If the test query fails.
     """
+    if not _connection_pool:
+        logger.info("Connection pool not initialised; returning degraded status.")
+        return False
+
     try:
         with get_connection() as conn:
             cursor = conn.cursor()
@@ -175,7 +186,7 @@ def test_connection() -> bool:
             return True
     except Exception as e:
         logger.error(f"Connection test failed: {str(e)}")
-        raise
+        return False
 
 
 def execute_query(query: str, params: Optional[dict] = None) -> list:
