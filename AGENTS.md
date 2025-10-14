@@ -29,6 +29,17 @@ Your main priorities are correctness and efficiency. The code you generate must 
 - **Infrastructure:** Docker for local parity, Docker Compose (if needed), and CI/CD pipelines orchestrating lint, test, build, and deploy stages.
 - Avoid introducing alternative stacks unless the product owner approves a change request.
 
+## Brain Web App Aesthetic Guidelines
+
+- **Objective:** Deliver a coherent, minimalist, and professional identity for "Brain"—an AI assistant for mental health researchers—evoking the polished feel of the Cursor editor while keeping the interface calm, focused, and purpose-driven.
+- **Primary Colour:** Leverage a strategic purple (`#7C3AED`) for primary actions, interactive elements, and brand highlights to guide attention without overwhelming the UI.
+- **Design Principles:** Embrace functional minimalism, generous whitespace, and clutter-free layouts so every element has a clear purpose and the experience feels spacious and intuitive.
+- **Colour Palette:** Combine the signature purple with a near-black background (`#0D0C1D`), lighter purple accents (`#A855F7`, `#C4B5FD`), soft off-white text (`#E5E7EB`), and neutral greys (`#374151`, `#4B5563`) for secondary content, borders, and inactive icons.
+- **Typography:** Adopt a modern sans-serif such as Inter or Manrope; enforce a clear hierarchy through deliberate sizing and weight to keep titles, subtitles, and body text immediately scannable.
+- **Cursor-Inspired Details:** Apply subtle rounded borders and gentle shadows, use clean outline icons, and prefer smooth, unobtrusive transitions (e.g., mellow hover colour shifts) to channel the Cursor aesthetic.
+- **Core Components:** Style primary buttons with solid purple fills and soft radii, secondary buttons with transparent backgrounds and purple borders, cards with muted dark backgrounds and refined outlines, and inputs that glow with purple focus states while remaining minimal.
+- **Experience Goal:** Convey serenity, intelligence, and concentration—“the calm of a starry night with flashes of brilliant purple insight”—so researchers feel supported by technology that empowers rather than distracts.
+
 ## Collaboration Protocol
 
 - Keep communication concise, professional, and proactive; confirm critical decisions before execution.
