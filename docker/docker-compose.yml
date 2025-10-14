@@ -1,0 +1,32 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: malackathon-api:latest
+    container_name: malackathon-api
+    env_file:
+      - ../.env
+    environment:
+      PYTHONUNBUFFERED: "1"
+      TNS_ADMIN: "/app/oracle_wallet"  # Override para asegurar la ruta en Docker
+    ports:
+      - "8000:8000"
+    restart: "no"  # Cambiar a "unless-stopped" cuando funcione bien
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - malackathon-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  malackathon-network:
+    driver: bridge

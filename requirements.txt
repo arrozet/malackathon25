@@ -1,0 +1,17 @@
+# FastAPI y servidor ASGI
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+
+# Oracle Database driver (thin mode - no requiere Oracle Client)
+oracledb==2.2.0
+
+# Utilidades y configuración
+python-dotenv==1.0.1
+pydantic==2.7.4
+pydantic-settings==2.3.4
+
+# ORM (opcional, pero ya estaba en requirements)
+SQLAlchemy==2.0.31
+
+# Para healthchecks en Docker
+requests==2.32.3
