@@ -304,4 +304,4 @@ Malackathon 2025 - DAJER Team
 
 ---
 
-**¡Buena suerte en el hackathon! 🚀**
+**¡Buena suerte en el hackathon! **

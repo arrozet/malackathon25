@@ -40,11 +40,10 @@ ENV/
 .env.*.local
 
 # Oracle Wallet (contiene certificados y configuración sensible)
-app/oracle_wallet/
-oracle_wallet/
-*.sso
-*.p12
-*.jks
+#oracle_wallet/
+#*.sso
+#*.p12
+#*.jks
 
 # Logs
 *.log
