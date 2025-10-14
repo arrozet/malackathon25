@@ -7,7 +7,7 @@ Your main priorities are correctness and efficiency. The code you generate must 
 
 - Satisfy all baseline milestones before attempting advanced features.
 - **Database milestone:** Provision Oracle Autonomous Database 23ai in OCI, load the provided dataset, normalise the schema, anonymise data via substitution, and create user `malackathon` (using the official challenge password shared via secure channel) with read access plus the `VISTA_MUY_INTERESANTE` view and its documented purpose.
-- **Web milestone:** Build and deploy a data exploration web app with React + Vite (frontend) and FastAPI (backend) that connects securely to the Oracle database, exposes filtering and visualisation features, and is accessible for evaluation.
+- **Web milestone:** Build and deploy the `Brain` data exploration web app—"Brain: your artificial research companion"—with React + TypeScript + Vite (frontend) and FastAPI (backend) that connects securely to the Oracle database, exposes filtering and visualisation features, and is accessible for evaluation.
 - **EDA milestone:** Produce an exploratory data analysis in R, exporting a PDF that covers descriptive statistics and feature engineering insights.
 - **DevOps milestone:** Containerise services with Docker, orchestrate local development parity, and implement CI/CD pipelines that run tests, build artefacts, and trigger automated deployments.
 - Document repository URLs, deployment endpoints, credentials (if any), and evaluation instructions for judges.
@@ -22,7 +22,7 @@ Your main priorities are correctness and efficiency. The code you generate must 
 
 ## Tech Stack Guardrails
 
-- **Frontend:** React + Vite + Tailwind CSS with modular components, typed props, accessible data visualisations, and reproducible builds.
+- **Frontend:** React + TypeScript + Vite + Tailwind CSS with modular components, typed props, accessible data visualisations, and reproducible builds.
 - **Backend:** Python + FastAPI with explicit pydantic models, dependency injection, and secure database access patterns.
 - **Database:** Oracle Autonomous Database 23ai schemas, SQL scripts, views, and migrations stored in version control.
 - **Data Science:** R notebooks/scripts for preprocessing, EDA, and report generation, with deterministic random seeds and documented dependencies.
