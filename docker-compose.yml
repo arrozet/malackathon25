@@ -1,0 +1,69 @@
+services:
+  # ============================================
+  # Backend Service (FastAPI + Oracle)
+  # ============================================
+  backend:
+    container_name: malackathon-backend
+    build:
+      context: .
+      dockerfile: ./app/back/Dockerfile
+    image: malackathon-backend:latest
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TNS_ADMIN=/app/oracle_wallet
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount wallet
+      - ./app/oracle_wallet:/app/oracle_wallet:ro
+      # Mount source for hot reload (opcional en desarrollo)
+      - ./app/back:/app/app/back:cached
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - malackathon-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================
+  # Frontend Service (React + Vite)
+  # ============================================
+  frontend:
+    container_name: malackathon-frontend
+    build:
+      context: ./app/front
+      dockerfile: Dockerfile
+    image: malackathon-frontend:latest
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount source for hot reload
+      - ./app/front:/app:cached
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - malackathon-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  malackathon-network:
+    driver: bridge
