@@ -10,7 +10,7 @@ from typing import Optional
 from contextlib import contextmanager
 import logging
 
-from app.config import config
+from app.back.config import config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

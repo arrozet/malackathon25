@@ -11,8 +11,8 @@ from contextlib import asynccontextmanager
 import logging
 from typing import Dict, Any
 
-from app.config import config
-from app.db import (
+from app.back.config import config
+from app.back.db import (
     initialize_connection_pool,
     close_connection_pool,
     test_connection,
