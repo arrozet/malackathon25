@@ -6,12 +6,14 @@ the database connection lifecycle.
 """
 
 from datetime import datetime, timezone
+from decimal import Decimal
+from typing import Any, Dict, Optional
+
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
-from typing import Dict, Any
 
 from app.back.config import config
 from app.back.db import (
@@ -19,6 +21,7 @@ from app.back.db import (
     close_connection_pool,
     test_connection,
     get_pool_status,
+    get_connection,
 )
 from app.back.schemas import InsightSummary
 
@@ -96,6 +99,276 @@ if allowed_origins:
     )
 
 
+def _to_float(value: Optional[Any]) -> float:
+    """Convert database numeric outputs into float numbers."""
+
+    if value is None:
+        return 0.0
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (int, float)):
+        return float(value)
+    return float(str(value))
+
+
+def _to_int(value: Optional[Any]) -> int:
+    """Convert database numeric outputs into integers."""
+
+    if value is None:
+        return 0
+    if isinstance(value, Decimal):
+        return int(value)
+    if isinstance(value, (int, float)):
+        return int(round(value))
+    return int(str(value))
+
+
+def _format_number(value: float, decimals: int = 0) -> str:
+    """Format numbers using Spanish thousands/decimal separators."""
+
+    if decimals == 0:
+        formatted = format(int(round(value)), ",d") if value else "0"
+        return formatted.replace(",", ".")
+    formatted = format(value, f",.{decimals}f")
+    integer_part, decimal_part = formatted.split(".")
+    integer_part = integer_part.replace(",", ".")
+    return f"{integer_part},{decimal_part}"
+
+
+def _format_percentage(ratio: float, decimals: int = 1) -> str:
+    """Format a ratio (0-1) as percentage string."""
+
+    value = max(ratio, 0.0) * 100
+    return f"{_format_number(value, decimals)}%"
+
+
+def _build_sample_period(start: Optional[datetime], end: Optional[datetime]) -> str:
+    """Create a compact label for the analysed period."""
+
+    if not start or not end:
+        return "Periodo no disponible"
+    start_label = f"{start.year}-{start.month:02d}"
+    end_label = f"{end.year}-{end.month:02d}"
+    if start_label == end_label:
+        return start_label
+    return f"{start_label} a {end_label}"
+
+
+def _build_insight_summary(database_connected: bool) -> InsightSummary:
+    """Generate the insight summary by querying Oracle Autonomous Database."""
+
+    generated_at = datetime.now(timezone.utc)
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            '''
+            SELECT 
+                COUNT(*) AS total_admissions,
+                AVG("Estancia Días") AS avg_stay,
+                SUM(CASE WHEN REINGRESO = 'S' THEN 1 ELSE 0 END) AS readmissions
+            FROM SALUDMENTAL
+            '''
+        )
+        total_admissions_raw, avg_stay_raw, readmissions_raw = cursor.fetchone()
+        total_admissions = _to_int(total_admissions_raw)
+        avg_stay = _to_float(avg_stay_raw)
+        readmissions = _to_int(readmissions_raw)
+
+        cursor.execute(
+            '''
+            SELECT MIN(FECHA_DE_INGRESO), MAX(FECHA_DE_INGRESO)
+            FROM SALUDMENTAL
+            WHERE FECHA_DE_INGRESO IS NOT NULL
+            '''
+        )
+        period_start, period_end = cursor.fetchone()
+        sample_period = _build_sample_period(period_start, period_end)
+
+        cursor.execute(
+            '''
+            SELECT COUNT(DISTINCT "CIP_SNS_RECODIFICADO")
+            FROM SALUDMENTAL
+            WHERE "CIP_SNS_RECODIFICADO" IS NOT NULL
+            '''
+        )
+        unique_patients = _to_int(cursor.fetchone()[0])
+
+        cursor.execute(
+            '''
+            SELECT "Categoría", COUNT(*)
+            FROM SALUDMENTAL
+            WHERE "Categoría" IS NOT NULL
+            GROUP BY "Categoría"
+            ORDER BY COUNT(*) DESC
+            FETCH FIRST 1 ROWS ONLY
+            '''
+        )
+        top_category_row = cursor.fetchone()
+        top_category = top_category_row[0] if top_category_row else None
+        top_category_count = _to_int(top_category_row[1]) if top_category_row else 0
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM SALUDMENTAL
+            WHERE SEXO = 2 AND EDAD BETWEEN 18 AND 29
+            """
+        )
+        female_young = _to_int(cursor.fetchone()[0])
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM SALUDMENTAL
+            WHERE SEXO = 1 AND EDAD >= 60
+            """
+        )
+        male_senior = _to_int(cursor.fetchone()[0])
+
+        cursor.execute(
+            """
+            SELECT AVG(EDAD)
+            FROM SALUDMENTAL
+            WHERE EDAD IS NOT NULL
+            """
+        )
+        avg_age = _to_float(cursor.fetchone()[0])
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM SALUDMENTAL
+            WHERE INGRESO_EN_UCI = 'S'
+            """
+        )
+        icu_admissions = _to_int(cursor.fetchone()[0])
+
+        cursor.execute(
+            '''
+            SELECT AVG("Estancia Días")
+            FROM SALUDMENTAL
+            WHERE REINGRESO = 'S' AND "Estancia Días" IS NOT NULL
+            '''
+        )
+        avg_stay_readmissions = _to_float(cursor.fetchone()[0])
+
+        cursor.close()
+
+    female_share = (female_young / total_admissions) if total_admissions else 0.0
+    male_senior_share = (male_senior / total_admissions) if total_admissions else 0.0
+    readmission_rate = (readmissions / total_admissions) if total_admissions else 0.0
+    top_category_share = (
+        (top_category_count / total_admissions)
+        if total_admissions and top_category_count
+        else 0.0
+    )
+
+    if total_admissions == 0:
+        highlight_phrases = [
+            "Sin registros disponibles en la tabla SALUDMENTAL.",
+        ]
+    else:
+        highlight_phrases = [
+            f"{_format_number(total_admissions)} admisiones registradas entre {sample_period}",
+            (
+                f"{top_category} concentra {_format_percentage(top_category_share)} de los diagnósticos"
+                if top_category
+                else f"{_format_percentage(readmission_rate)} de los casos termina en reingreso"
+            ),
+            f"{_format_percentage(female_share)} de los ingresos corresponde a mujeres de 18-29 años",
+        ]
+
+    metric_sections = [
+        {
+            "title": "Panorama general",
+            "metrics": [
+                {
+                    "title": "Admisiones totales",
+                    "value": _format_number(total_admissions),
+                    "description": (
+                        f"Periodo analizado: {sample_period}. "
+                        f"Principal categoría: {top_category or 'sin datos'}."
+                    ),
+                },
+                {
+                    "title": "Estancia media",
+                    "value": f"{_format_number(avg_stay, 1)} días",
+                    "description": "Promedio calculado sobre ingresos con estancia registrada.",
+                },
+                {
+                    "title": "Pacientes únicos",
+                    "value": _format_number(unique_patients),
+                    "description": "Identificadores sanitarios distintos presentes en el periodo.",
+                },
+            ],
+        },
+        {
+            "title": "Perspectiva por género y edad",
+            "metrics": [
+                {
+                    "title": "Mujeres 18-29 años",
+                    "value": _format_number(female_young),
+                    "description": (
+                        f"Equivalen a {_format_percentage(female_share)} del total de admisiones."
+                    ),
+                },
+                {
+                    "title": "Varones ≥60 años",
+                    "value": _format_number(male_senior),
+                    "description": (
+                        f"Representan {_format_percentage(male_senior_share)} de los ingresos."
+                    ),
+                },
+                {
+                    "title": "Edad media al ingreso",
+                    "value": f"{_format_number(avg_age, 1)} años",
+                    "description": "Edad promedio considerando registros con dato disponible.",
+                },
+            ],
+        },
+        {
+            "title": "Factores de riesgo a vigilar",
+            "metrics": [
+                {
+                    "title": "Readmisiones registradas",
+                    "value": _format_number(readmissions),
+                    "description": (
+                        f"Impactan a {_format_percentage(readmission_rate)} del total de ingresos."
+                    ),
+                },
+                {
+                    "title": "Ingresos en UCI",
+                    "value": _format_number(icu_admissions),
+                    "description": "Casos que requirieron cuidados intensivos durante el contacto.",
+                },
+                {
+                    "title": "Estancia media reingresados",
+                    "value": (
+                        f"{_format_number(avg_stay_readmissions, 1)} días"
+                        if readmissions
+                        else "–"
+                    ),
+                    "description": (
+                        "Promedio de estancia para quienes reingresaron."
+                        if readmissions
+                        else "Sin reingresos registrados con estancia disponible."
+                    ),
+                },
+            ],
+        },
+    ]
+
+    return InsightSummary(
+        generated_at=generated_at,
+        sample_period=sample_period,
+        highlight_phrases=highlight_phrases,
+        metric_sections=metric_sections,
+        database_connected=database_connected,
+    )
+
+
 @app.get("/")
 async def root() -> Dict[str, str]:
     """
@@ -153,12 +426,10 @@ async def health_check() -> Dict[str, Any]:
 @app.get("/insights", response_model=InsightSummary)
 async def get_prototype_insights() -> InsightSummary:
     """
-    Retrieve a curated summary of mock insights for the Brain landing page.
+    Retrieve a curated summary of insights for the Brain landing page.
     
-    The current implementation returns static values that allow the frontend to
-    render a realistic dashboard while the Oracle integration is configured.
-    Once the database is available, this handler will transform live query
-    results into the same schema.
+    The handler queries the Oracle Autonomous Database to compute aggregated
+    metrics. If the connection fails, a fallback dataset keeps the UI usable.
     
     Returns:
         InsightSummary: Structured insight payload for the frontend.
@@ -168,79 +439,44 @@ async def get_prototype_insights() -> InsightSummary:
     try:
         database_status = test_connection()
     except Exception:
-        logger.warning("Oracle database not reachable for prototype insights.")
+        logger.warning("Oracle database not reachable for insights endpoint.")
 
+    if database_status:
+        try:
+            return _build_insight_summary(database_status)
+        except Exception as exc:
+            logger.error("Failed to build insight summary from Oracle: %s", exc)
+
+    logger.info("Serving fallback insight payload due to unavailable database.")
     generated_at = datetime.now(timezone.utc)
-
     return InsightSummary(
         generated_at=generated_at,
-        sample_period="Q1 2024",
+        sample_period="Datos no disponibles",
         highlight_phrases=[
-            "Admisiones psiquiátricas estables con ligero aumento en mujeres jóvenes",
-            "Estancias medias reducidas 1.4 días gracias a intervenciones tempranas",
-            "Readmisiones concentradas en trastornos afectivos severos",
+            "No se pudo consultar la base de datos en este momento.",
+            "Mostrando cifras estáticas para mantener la experiencia demo.",
         ],
         metric_sections=[
             {
-                "title": "Panorama general",
+                "title": "Servicio temporal",
                 "metrics": [
                     {
-                        "title": "Admisiones totales",
-                        "value": "1,842",
-                        "description": "Pacientes únicos ingresados en la red hospitalaria durante el periodo analizado.",
+                        "title": "Backend en modo degradado",
+                        "value": "–",
+                        "description": "Verifica credenciales, wallet y conectividad con Oracle Autonomous Database.",
                     },
                     {
-                        "title": "Estancia media",
-                        "value": "7.6 días",
-                        "description": "Promedio de días desde ingreso hasta alta, excluyendo hospitalizaciones parciales.",
+                        "title": "Paso siguiente",
+                        "value": "Reintentar",
+                        "description": "Reinicia el backend tras corregir la configuración o vuelve a cargar la página en unos segundos.",
                     },
                     {
-                        "title": "Readmisiones 30 días",
-                        "value": "12.4%",
-                        "description": "Porcentaje de pacientes reingresados en menos de un mes tras el alta.",
+                        "title": "Soporte",
+                        "value": "Equipo Malackathon",
+                        "description": "Reporta el incidente en el canal del equipo para recibir ayuda rápida.",
                     },
                 ],
-            },
-            {
-                "title": "Perspectiva por género y edad",
-                "metrics": [
-                    {
-                        "title": "Mujeres 18-29 años",
-                        "value": "+6.2%",
-                        "description": "Variación interanual en admisiones, destacando trastornos de ansiedad severa.",
-                    },
-                    {
-                        "title": "Varones >60 años",
-                        "value": "-3.8%",
-                        "description": "Descenso en ingresos por episodios depresivos mayores tras programas ambulatorios.",
-                    },
-                    {
-                        "title": "Estancia media U. agudos",
-                        "value": "5.1 días",
-                        "description": "Segmento con mayor rotación, clave para planificar recursos críticos.",
-                    },
-                ],
-            },
-            {
-                "title": "Factores de riesgo a vigilar",
-                "metrics": [
-                    {
-                        "title": "Intentos de suicidio previos",
-                        "value": "27%",
-                        "description": "Proporción de pacientes con historial de intentos, indicador de alerta prioritario.",
-                    },
-                    {
-                        "title": "Tiempo a primera cita",
-                        "value": "18 días",
-                        "description": "Retrasos en seguimiento ambulatorio post alta, foco de mejora en coordinación.",
-                    },
-                    {
-                        "title": "Cobertura terapias familiares",
-                        "value": "41%",
-                        "description": "Acceso actual a programas de acompañamiento familiar durante la hospitalización.",
-                    },
-                ],
-            },
+            }
         ],
         database_connected=database_status,
     )
