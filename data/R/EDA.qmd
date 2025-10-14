@@ -1,0 +1,13 @@
+---
+title: "Malackathon"
+format: html
+editor: visual
+---
+
+Cargar dataset (Tiene warnings)
+
+```{r}
+library(readxl)
+SaludMental <- read_excel("../SaludMental.xls")
+View(SaludMental)
+```
