@@ -374,7 +374,7 @@ ggplot(diagnosticos_top, aes(x = `Diagnóstico Principal`, y = casos)) +
   theme(plot.margin = margin(10, 30, 10, 10))
 ```
 
-### **Interpretación de los diagnósticos predominantes**
+### **Interpretación de los diagnósticos predominantes (CORREGIR)**
 
 1.  **Alta concentración en trastornos psicóticos y afectivos:** Los códigos del capítulo F, como `F20.9` (esquizofrenia, tipo no especificado) y `F31.9` (trastorno bipolar), dominan el ranking, confirmando la carga que representan los trastornos psiquiátricos severos.
 
