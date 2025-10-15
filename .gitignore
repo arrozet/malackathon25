@@ -109,3 +109,5 @@ vignettes/*.pdf
 ### R.Bookdown Stack ###
 # R package: bookdown caching files
 /*_files/
+data/R/SaludMental.xls
+data/R/R.Rproj

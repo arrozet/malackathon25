@@ -16,6 +16,7 @@ library(tidyverse)
 library(readxl)
 library(visdat)
 library(GGally)
+library(patchwork)
 
 # Opciones de gráficos para acelerar el render a PDF
 knitr::opts_chunk$set(
@@ -43,8 +44,8 @@ head(SaludMental)
 
 ### Comentarios sobre la carga
 
-- El dataset tiene `r num_filas` filas y `r num_columnas` columnas.
-- Durante la importación inicial del conjunto de datos aparecieron advertencias del tipo *Expecting logical ... got '0UT94ZZ'*. R infirió de forma incorrecta que algunas columnas eran lógicas y, al encontrar códigos de texto, generó el aviso. Se forzó la importación de estas columnas como texto para preservar todos los valores originales y evitar pérdidas de información.
+-   El dataset tiene `r num_filas` filas y `r num_columnas` columnas.
+-   Durante la importación inicial del conjunto de datos aparecieron advertencias del tipo *Expecting logical ... got '0UT94ZZ'*. R infirió de forma incorrecta que algunas columnas eran lógicas y, al encontrar códigos de texto, generó el aviso. Se forzó la importación de estas columnas como texto para preservar todos los valores originales y evitar pérdidas de información.
 
 ## Estructura y tipos de datos
 
@@ -57,23 +58,15 @@ as.data.frame(table(tipos))
 
 ### Interpretación
 
-**Panorama general**  Se identificaron 13 variables numéricas, aunque muchas representan códigos categóricos. Se clasifican en tres grupos:
+**Panorama general** Se identificaron 13 variables numéricas, aunque muchas representan códigos categóricos. Se clasifican en tres grupos:
 
-**1. Métricas cuantitativas reales**
-- `Edad` y `Edad en Ingreso` muestran distribuciones casi normales y correlación 1.0; una puede eliminarse por redundancia.
-- `Estancia Días`, `Coste APR` y `Peso Español APR` presentan fuerte asimetría positiva con casos extremos relevantes para gestión clínica.
+**1. Métricas cuantitativas reales** - `Edad` y `Edad en Ingreso` muestran distribuciones casi normales y correlación 1.0; una puede eliminarse por redundancia. - `Estancia Días`, `Coste APR` y `Peso Español APR` presentan fuerte asimetría positiva con casos extremos relevantes para gestión clínica.
 
-**2. Códigos categóricos codificados como números**
-- `Sexo`, `Tipo Alta`, `Nivel Severidad APR`, `Riesgo Mortalidad APR`, `GRD APR`, `CDM APR` y similares se concentran en pocos valores enteros.
-- Deben convertirse en factores con etiquetas descriptivas antes de cualquier modelado.
+**2. Códigos categóricos codificados como números** - `Sexo`, `Tipo Alta`, `Nivel Severidad APR`, `Riesgo Mortalidad APR`, `GRD APR`, `CDM APR` y similares se concentran en pocos valores enteros. - Deben convertirse en factores con etiquetas descriptivas antes de cualquier modelado.
 
-**3. Variables constantes o sin valor analítico**
-- `CIE` es constante (valor 10) y no aporta información.
+**3. Variables constantes o sin valor analítico** - `CIE` es constante (valor 10) y no aporta información.
 
-**Relaciones clave**
-- `Estancia Días` y `Coste APR` correlacionan moderadamente (0.231*), lo que respalda su relación esperada.
-- `Nivel Severidad APR` y `Peso Español APR` tienen correlación positiva (0.251*), reflejando mayor peso en casos severos.
-- La forma en “L” de las dispersiones sugiere evaluar transformaciones logarítmicas para distribuciones sesgadas.
+**Relaciones clave** - `Estancia Días` y `Coste APR` correlacionan moderadamente (0.231*), lo que respalda su relación esperada. - `Nivel Severidad APR` y `Peso Español APR` tienen correlación positiva (0.251*), reflejando mayor peso en casos severos. - La forma en “L” de las dispersiones sugiere evaluar transformaciones logarítmicas para distribuciones sesgadas.
 
 ## Valores faltantes (nulos)
 
@@ -104,15 +97,9 @@ vis_miss(muestra_miss, warn_large_data = FALSE)
 
 El análisis revela tres grupos claros de variables según la cantidad de datos faltantes:
 
-**1. Columnas completamente vacías (100% NA)**
-- Ejemplos: `CCAA Residencia`, `Procedimiento 12`-`Procedimiento 20`, `GDR IR`.
-- Situación: cada variable acumula 21 210 valores faltantes, por lo que no aporta información.
-- Acción: eliminar estas columnas para reducir ruido y simplificar el modelo de datos.
+**1. Columnas completamente vacías (100% NA)** - Ejemplos: `CCAA Residencia`, `Procedimiento 12`-`Procedimiento 20`, `GDR IR`. - Situación: cada variable acumula 21 210 valores faltantes, por lo que no aporta información. - Acción: eliminar estas columnas para reducir ruido y simplificar el modelo de datos.
 
-**2. Columnas con alta tasa de valores faltantes (>90% NA)**
-- Ejemplos: `Diagnóstico 3`-`Diagnóstico 20` y procedimientos secundarios.
-- Lectura: la mayoría de pacientes no alcanza tantos registros; los NA reflejan esa estructura.
-- Acción: excluirlas de análisis generales y derivar una métrica del número de diagnósticos/procedimientos por paciente.
+**2. Columnas con alta tasa de valores faltantes (\>90% NA)** - Ejemplos: `Diagnóstico 3`-`Diagnóstico 20` y procedimientos secundarios. - Lectura: la mayoría de pacientes no alcanza tantos registros; los NA reflejan esa estructura. - Acción: excluirlas de análisis generales y derivar una métrica del número de diagnósticos/procedimientos por paciente.
 
 Causa Probable: Estas columnas podrían ser placeholders en la base de datos original, campos que nunca se utilizan, o datos que no se extrajeron correctamente durante el proceso de recopilación.
 
@@ -144,9 +131,9 @@ SaludMental %>% filter(duplicated(.)) %>% head(10)
 
 ### Interpretación
 
-- No se identificaron filas duplicadas; el porcentaje es 0%.
-- Cada registro representa un episodio único, lo que confirma la calidad de la extracción original.
-- No se requieren pasos adicionales de limpieza relacionados con duplicados.
+-   No se identificaron filas duplicadas; el porcentaje es 0%.
+-   Cada registro representa un episodio único, lo que confirma la calidad de la extracción original.
+-   No se requieren pasos adicionales de limpieza relacionados con duplicados.
 
 ## Variables numéricas: resúmenes y gráficos
 
@@ -266,20 +253,13 @@ if (length(vars_to_show) > 0) {
 
 El análisis de las nueve variables categóricas seleccionadas revela cuatro hallazgos principales:
 
-**1. Sesgo geográfico y demográfico**
-- `Comunidad Autónoma` está dominada por Andalucía; las conclusiones no se generalizan al resto de España.
-- `País Nacimiento` se concentra en el código `724` (España) y un valor residual `ZZZ`.
+**1. Sesgo geográfico y demográfico** - `Comunidad Autónoma` está dominada por Andalucía; las conclusiones no se generalizan al resto de España. - `País Nacimiento` se concentra en el código `724` (España) y un valor residual `ZZZ`.
 
-**2. Perfil clínico dominante**
-- `Diagnóstico Principal` se enfoca en códigos CIE-10 del capítulo F, destacando `F20.9`, `F20.0` y `F31.9`.
-- `Procedimiento 1` privilegia códigos como `GZZZZZZ` (sin procedimiento) y otros específicos (`B02ZZZZ`, `GZ14ZZZ`).
+**2. Perfil clínico dominante** - `Diagnóstico Principal` se enfoca en códigos CIE-10 del capítulo F, destacando `F20.9`, `F20.0` y `F31.9`. - `Procedimiento 1` privilegia códigos como `GZZZZZZ` (sin procedimiento) y otros específicos (`B02ZZZZ`, `GZ14ZZZ`).
 
-**3. Identificadores de alta cardinalidad**
-- `Nombre`, `Número de registro anual` y `Centro Recodificado` poseen muchos valores únicos; son útiles como identificadores, no para agregaciones.
+**3. Identificadores de alta cardinalidad** - `Nombre`, `Número de registro anual` y `Centro Recodificado` poseen muchos valores únicos; son útiles como identificadores, no para agregaciones.
 
-**4. Variables temporales mal tipificadas**
-- `Mes de Ingreso` y `Fecha de Fin Contacto` se almacenan como texto; deben transformarse a formatos de fecha para análisis de tendencias.
-## Outliers (regla IQR)
+**4. Variables temporales mal tipificadas** - `Mes de Ingreso` y `Fecha de Fin Contacto` se almacenan como texto; deben transformarse a formatos de fecha para análisis de tendencias. \## Outliers (regla IQR)
 
 ```{r}
   outlier_stats <- numericas %>%
@@ -307,19 +287,97 @@ El análisis de las nueve variables categóricas seleccionadas revela cuatro hal
 
 El análisis IQR diferencia dos tipos de resultados:
 
-**1. Falsos positivos en códigos categóricos**
-- `Circunstancia de Contacto`, `Tipo Alta`, `GRD APR`, `Riesgo Mortalidad APR` y similares aparecen con altos porcentajes de outliers.
-- La causa es que el IQR se aplica a columnas de códigos discretos con baja variabilidad (por ejemplo, solo valores 1 y 2).
-- Acción: reclasificar estas variables como factores y excluirlas del análisis de outliers.
+**1. Falsos positivos en códigos categóricos** - `Circunstancia de Contacto`, `Tipo Alta`, `GRD APR`, `Riesgo Mortalidad APR` y similares aparecen con altos porcentajes de outliers. - La causa es que el IQR se aplica a columnas de códigos discretos con baja variabilidad (por ejemplo, solo valores 1 y 2). - Acción: reclasificar estas variables como factores y excluirlas del análisis de outliers.
 
-**2. Outliers reales en métricas cuantitativas**
-- `Estancia Días` (5.8%), `Coste APR` (0.9%) y `Peso Español APR` (0.8%) contienen casos extremos auténticos.
-- Representan estancias prolongadas y episodios de alto coste; conviene analizarlos detalladamente antes de decidir cualquier tratamiento.
-- `Edad` y `Edad en Ingreso` muestran outliers en extremos etarios, coherentes con la distribución.
+**2. Outliers reales en métricas cuantitativas** - `Estancia Días` (5.8%), `Coste APR` (0.9%) y `Peso Español APR` (0.8%) contienen casos extremos auténticos. - Representan estancias prolongadas y episodios de alto coste; conviene analizarlos detalladamente antes de decidir cualquier tratamiento. - `Edad` y `Edad en Ingreso` muestran outliers en extremos etarios, coherentes con la distribución.
 
-**Conclusión**  Los outliers validan la necesidad de diferenciar variables categóricas y cuantitativas, y subrayan que los casos extremos en costes y estancias son cruciales para la toma de decisiones clínicas y de gestión.
+**Conclusión** Los outliers validan la necesidad de diferenciar variables categóricas y cuantitativas, y subrayan que los casos extremos en costes y estancias son cruciales para la toma de decisiones clínicas y de gestión.
 
+# Análisis univariable
 
+A continuación, analizaremos 1 a 1 columnas de gran interés.
 
+## Estancia Días: exploración gráfica combinada
 
+La duración de las estancias hospitalarias es una métrica crítica para detectar posibles ineficiencias o casos clínicos complejos. La combinación de histogramas y diagramas de caja permite identificar simultáneamente la forma de la distribución y los valores atípicos que podrían requerir revisión clínica o protocolos diferenciales.
 
+```{r, fig.width = 11, fig.height = 8}
+datos_estancia <- SaludMental %>%
+  filter(!is.na(`Estancia Días`))
+
+hist_estancia <- ggplot(datos_estancia, aes(x = `Estancia Días`)) +
+  geom_histogram(
+    binwidth = 5,
+    fill = "#4e79a7",
+    color = "white",
+    boundary = 0,
+    closed = "left"
+  ) +
+  geom_density(aes(y = after_stat(count)), color = "#f28e2b", linewidth = 1.2) +
+  labs(
+    title = "Distribución de Estancia Días",
+    subtitle = "Histograma con curva de densidad (binwidth = 5 días)",
+    x = "Estancia (días)",
+    y = "Número de episodios"
+  ) +
+  theme_minimal(base_size = 13)
+
+box_estancia <- ggplot(datos_estancia, aes(x = "Estancia Días", y = `Estancia Días`)) +
+  geom_boxplot(fill = "#76b7b2", outlier.alpha = 0.5) +
+  labs(
+    title = "Resumen de outliers en Estancia Días",
+    x = NULL,
+    y = "Estancia (días)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+hist_estancia / box_estancia +
+  plot_layout(heights = c(3, 1))
+```
+
+### **Interpretación de la Distribución de la Estancia en Días**
+
+La visualización combinada del histograma y el diagrama de caja ofrece una visión clara y contundente sobre la naturaleza de la variable `Estancia Días`.
+
+1.  **Fuerte Asimetría Positiva:** El histograma muestra una distribución con un marcado sesgo hacia la derecha (asimetría positiva). Esto significa que la gran mayoría de las estancias hospitalarias son de corta duración, con una alta concentración de casos en los primeros días tras el ingreso.
+
+2.  **Presencia de Outliers Relevantes:** La larga cola hacia la derecha en el histograma, confirmada por los numerosos puntos individuales en el diagrama de caja, indica la presencia de valores atípicos significativos. Estos puntos representan un número reducido de pacientes cuyas estancias son excepcionalmente largas en comparación con la norma.
+
+3.  **La Media como Medida Engañosa:** Debido a esta asimetría, la media aritmética de los días de estancia se verá fuertemente influenciada por estos valores extremos y no será un buen representante del "caso típico". El diagrama de caja muestra que la mediana (la línea dentro de la caja), que representa el valor central del 50% de los datos, es mucho más baja. Por lo tanto, **la mediana es una métrica más robusta y fiable** para describir la duración de una estancia habitual.
+
+**En resumen:** La mayoría de los pacientes permanecen hospitalizados por un periodo corto. Sin embargo, existe un subgrupo de pacientes con estancias muy prolongadas que, aunque son una minoría, son cruciales para el análisis, ya que probablemente representen los casos más complejos, costosos o con mayores comorbilidades. Cualquier análisis posterior o modelo predictivo deberá tener en cuenta esta distribución no normal para evitar conclusiones erróneas.
+
+## Diagnóstico Principal: prevalencias clave
+
+El diagnóstico nominal define la naturaleza clínica de cada episodio. Identificar los códigos CIE-10 más frecuentes ayuda a priorizar líneas asistenciales, enfocar estudios específicos y anticipar qué patologías dominarán cualquier modelo predictivo posterior.
+
+```{r, fig.width = 11, fig.height = 7}
+diagnosticos_top <- SaludMental %>%
+  filter(!is.na(`Diagnóstico Principal`)) %>%
+  count(`Diagnóstico Principal`, name = "casos") %>%
+  arrange(desc(casos)) %>%
+  slice_head(n = 15) %>%
+  mutate(`Diagnóstico Principal` = forcats::fct_reorder(`Diagnóstico Principal`, casos))
+
+ggplot(diagnosticos_top, aes(x = `Diagnóstico Principal`, y = casos)) +
+  geom_col(fill = "#e15759") +
+  geom_text(aes(label = casos), hjust = -0.05, size = 3.5) +
+  coord_flip(clip = "off") +
+  expand_limits(y = max(diagnosticos_top$casos) * 1.1) +
+  labs(
+    title = "Top 15 Diagnósticos Principales por Frecuencia",
+    x = "Diagnóstico (Código CIE)",
+    y = "Número de Casos"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(plot.margin = margin(10, 30, 10, 10))
+```
+
+### **Interpretación de los diagnósticos predominantes**
+
+1.  **Alta concentración en trastornos psicóticos y afectivos:** Los códigos del capítulo F, como `F20.9` (esquizofrenia, tipo no especificado) y `F31.9` (trastorno bipolar), dominan el ranking, confirmando la carga que representan los trastornos psiquiátricos severos.
+
+2.  **Patrones clínicos repetitivos:** La repetición de códigos muy similares sugiere episodios recurrentes o ingresos múltiples por la misma causa, lo que obliga a examinar la continuidad asistencial y los planes de seguimiento ambulatorio.
+
+3.  **Cartera de servicios centrada en salud mental grave:** La escasa presencia de diagnósticos somáticos indica que el recurso asistencial analizado está altamente especializado. Esto debe reflejarse en la planificación de recursos y en la interpretación de métricas de desempeño.
