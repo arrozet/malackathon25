@@ -1,0 +1,339 @@
+---
+title: "EDA Salud Mental"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    fig-format: jpeg
+    dpi: 120
+editor: visual
+---
+
+## Librerías
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(visdat)
+library(GGally)
+library(patchwork)
+library(writexl)
+library(lubridate)
+library(stringr)
+
+# Opciones de gráficos para acelerar el render a PDF
+knitr::opts_chunk$set(
+  dev = "png",
+  dpi = 200,
+  fig.width = 11,
+  fig.height = 6.5,
+  out.width = "100%"
+)
+```
+
+## Carga de datos
+
+Leemos el Excel original. Si aparecen warnings en la carga, se muestran justo encima de esta línea en la salida y los comentamos a continuación.
+
+```{r}
+SaludMental <- read_excel("../SaludMental.xls")
+```
+
+## Objetivos del plan de limpieza
+
+1.  Preservar el dataset original (`SaludMental`) y construir una copia (`SaludMental_limpio`).
+2.  Eliminar columnas sin información (100% NA) y variables constantes detectadas en el EDA.
+3.  Corregir tipos de datos erróneos (fechas, códigos categóricos) y documentar cada conversión.
+4.  Generar variables derivadas que resuman información redundante (por ejemplo, número de diagnósticos registrados).
+5.  Exportar el resultado a un nuevo archivo Excel (`SaludMental_limpio.xlsx`) para su carga posterior en la base de datos.
+
+## Duplica el dataset original
+
+```{r}
+SaludMental_limpio <- SaludMental
+```
+
+Creamos una copia para trabajar de forma segura sin tocar el Excel de origen.
+
+## Columnas completamente nulas o constantes
+
+```{r}
+# Identificar columnas con 100% de NA
+cols_todo_na <- SaludMental_limpio %>%
+  summarise(across(everything(), ~ all(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "columna", values_to = "todo_na") %>%
+  filter(todo_na) %>%
+  pull(columna)
+
+length(cols_todo_na)
+cols_todo_na
+
+# Identificar columnas constantes (un solo valor no nulo)
+cols_constantes <- SaludMental_limpio %>%
+  summarise(across(everything(), ~ n_distinct(na.omit(.)))) %>%
+  pivot_longer(everything(), names_to = "columna", values_to = "n_dist") %>%
+  filter(n_dist == 1) %>%
+  pull(columna)
+
+cols_constantes
+```
+
+Estas listas confirman los hallazgos del EDA: columnas sin información útil. Procedemos a eliminarlas.
+
+```{r}
+cols_a_eliminar <- union(cols_todo_na, cols_constantes)
+
+cols_a_eliminar_existentes <- intersect(cols_a_eliminar, colnames(SaludMental_limpio))
+
+SaludMental_limpio <- SaludMental_limpio %>%
+  select(-all_of(cols_a_eliminar_existentes))
+
+length(cols_a_eliminar_existentes)
+ncol(SaludMental) - ncol(SaludMental_limpio)
+```
+
+Se eliminan todas las columnas redundantes presentes en el dataset, reduciendo el ancho de la tabla manteniendo solo atributos informativos.
+
+## Columnas con más del 95% de valores nulos
+
+El EDA evidenció un número elevado de variables prácticamente vacías. Confirmamos qué columnas mantienen todavía más del 95% de `NA` y las descartamos para evitar ruido:
+
+```{r}
+na_porcentaje <- SaludMental_limpio %>%
+  summarise(across(everything(), ~ mean(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "columna", values_to = "pct_na") %>%
+  mutate(pct_na = pct_na * 100) %>%
+  arrange(desc(pct_na))
+
+cols_na95 <- na_porcentaje %>%
+  filter(pct_na > 95) %>%
+  pull(columna)
+
+cols_na95
+length(cols_na95)
+```
+
+```{r}
+cols_na95_existentes <- intersect(cols_na95, colnames(SaludMental_limpio))
+
+SaludMental_limpio <- SaludMental_limpio %>%
+  select(-all_of(cols_na95_existentes))
+
+length(cols_na95_existentes)
+```
+
+Eliminamos únicamente las columnas existentes con escasa información (más del 95% de valores nulos). Esto reduce la dimensionalidad y deja la tabla con atributos realmente útiles para análisis y modelado.
+
+## Normalización de columnas de fecha
+
+Detectamos columnas temporales almacenadas como texto. Las convertimos a formatos de fecha apropiados:
+
+```{r}
+parse_fecha_flexible <- function(x) {
+  if (inherits(x, "Date")) {
+    return(x)
+  }
+  if (inherits(x, "POSIXt")) {
+    return(as_date(x))
+  }
+  if (is.numeric(x)) {
+    return(as_date(x, origin = "1899-12-30"))
+  }
+  x_chr <- trimws(as.character(x))
+  x_chr[x_chr == ""] <- NA_character_
+  parsed <- suppressWarnings(parse_date_time(
+    x_chr,
+    orders = c("Ymd", "dmY", "mdY", "Ymd HMS", "dmY HMS", "mdY HMS")
+  ))
+  as_date(parsed)
+}
+
+SaludMental_limpio <- SaludMental_limpio %>%
+  mutate(
+    `Fecha de Ingreso` = parse_fecha_flexible(`Fecha de Ingreso`),
+    `Fecha de Fin Contacto` = parse_fecha_flexible(`Fecha de Fin Contacto`),
+    `Mes de Ingreso` = suppressWarnings(as_date(paste0(`Mes de Ingreso`, "-01")))
+  )
+
+summary(select(SaludMental_limpio, `Fecha de Ingreso`, `Fecha de Fin Contacto`, `Mes de Ingreso`))
+```
+
+```{r}
+fechas_no_parseadas <- SaludMental %>%
+  transmute(
+    fila = row_number(),
+    `Fecha de Ingreso` = trimws(as.character(`Fecha de Ingreso`)),
+    `Fecha de Fin Contacto` = trimws(as.character(`Fecha de Fin Contacto`))
+  ) %>%
+  filter(
+    `Fecha de Ingreso` %in% c("", NA) | `Fecha de Fin Contacto` %in% c("", NA)
+  )
+
+nrow(fechas_no_parseadas)
+head(fechas_no_parseadas, 5)
+```
+
+No hay valores mal formateados.
+
+## Limpieza de texto en columnas categóricas relevantes
+
+Alineamos mayúsculas/minúsculas y espacios para evitar duplicados artificiales:
+
+```{r}
+columnas_texto <- c(
+  "Comunidad Autónoma",
+  "Diagnóstico Principal",
+  "Procedimiento 1",
+  "Centro Recodificado",
+  "País Nacimiento"
+)
+
+SaludMental_limpio <- SaludMental_limpio %>%
+  mutate(across(all_of(columnas_texto), ~ str_squish(str_to_upper(as.character(.)))))
+```
+
+Esto garantiza que valores como “andalucía”, “Andalucía” y “ ANDALUCIA ” se unifiquen.
+
+## Columnas de diagnósticos y procedimientos
+
+```{r}
+cols_diagnosticos <- names(SaludMental_limpio)[str_detect(names(SaludMental_limpio), "^Diagnóstico")]
+cols_procedimientos <- names(SaludMental_limpio)[str_detect(names(SaludMental_limpio), "^Procedimiento")]
+
+cols_diagnosticos
+cols_procedimientos
+```
+
+Estas listas incluyen el diagnóstico principal y los secundarios, además de los procedimientos registrados por fila.
+
+## Variables derivadas
+
+```{r}
+SaludMental_limpio <- SaludMental_limpio %>%
+  mutate(
+    Diagnosticos_totales = rowSums(!is.na(select(., all_of(cols_diagnosticos))), na.rm = TRUE),
+    Procedimientos_totales = rowSums(!is.na(select(., all_of(cols_procedimientos))), na.rm = TRUE),
+    Tiene_procedimiento = Procedimientos_totales > 0,
+    Diagnostico_F = str_starts(`Diagnóstico Principal`, "F"),
+    Diagnostico_F = replace_na(Diagnostico_F, FALSE),
+    Tiene_Comorbilidad = Diagnosticos_totales > 1,
+    Duracion_Episodio_Calculada = as.integer(`Fecha de Fin Contacto` - `Fecha de Ingreso`)
+  )
+
+summary(select(SaludMental_limpio, Diagnosticos_totales, Procedimientos_totales, Tiene_procedimiento, Diagnostico_F, Tiene_Comorbilidad, Duracion_Episodio_Calculada))
+```
+
+`Diagnosticos_totales` y `Procedimientos_totales` cuantifican la carga clínica; `Tiene_procedimiento` ayuda a segmentar filas sin intervención registrada; `Diagnostico_F` identifica patologías mentales (códigos F en CIE-10); `Tiene_Comorbilidad` marca episodios con múltiples diagnósticos y `Duracion_Episodio_Calculada` estima la duración del contacto en días.
+
+## Eliminación de columnas redundantes
+
+Verificamos que `Edad` y `Edad en Ingreso` son equivalentes y descartamos la duplicada:
+
+```{r}
+identicas <- identical(SaludMental_limpio$Edad, SaludMental_limpio$`Edad en Ingreso`)
+identicas
+
+if (identicas) {
+  SaludMental_limpio <- SaludMental_limpio %>%
+    select(-Edad)
+}
+```
+
+De esta forma conservamos únicamente `Edad en Ingreso`, que aporta la misma información.
+
+## Segmentación por grupo etario
+
+Construimos una variable categórica basada en `Edad en Ingreso` para análisis demográficos:
+
+```{r}
+SaludMental_limpio <- SaludMental_limpio %>%
+  mutate(
+    Grupo_Etario = case_when(
+      `Edad en Ingreso` < 18 ~ "0-17",
+      `Edad en Ingreso` >= 18 & `Edad en Ingreso` <= 35 ~ "18-35",
+      `Edad en Ingreso` >= 36 & `Edad en Ingreso` <= 64 ~ "36-64",
+      `Edad en Ingreso` >= 65 ~ "65+",
+      TRUE ~ NA_character_
+    )
+  )
+
+table(SaludMental_limpio$Grupo_Etario, useNA = "ifany")
+```
+
+`Grupo_Etario` agrupa a los pacientes en bloques interpretables (menores, jóvenes, adultos y seniors) sin alterar la edad continua.
+
+## Componentes temporales del ingreso
+
+Derivamos el nombre del día y del mes de `Fecha de Ingreso` para análisis estacionales:
+
+```{r}
+dias_semana <- c("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo")
+meses_nombre <- c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre")
+
+SaludMental_limpio <- SaludMental_limpio %>%
+  mutate(
+    Dia_Semana_Ingreso = factor(dias_semana[wday(`Fecha de Ingreso`, week_start = 1)], levels = dias_semana),
+    Mes_Nombre_Ingreso = factor(meses_nombre[month(`Fecha de Ingreso`)], levels = meses_nombre)
+  )
+
+table(SaludMental_limpio$Dia_Semana_Ingreso, useNA = "ifany")
+```
+
+Estas variables permiten estudiar patrones semanales y mensuales sin modificar la fecha original.
+
+## Tratamiento de valores atípicos en `Estancia Días`
+
+Aplicamos winsorización en el percentil 99 para acotar estancias extremas sin perder la referencia original:
+
+```{r}
+percentil_99_estancia <- quantile(SaludMental_limpio$`Estancia Días`, 0.99, na.rm = TRUE)
+percentil_99_estancia
+
+SaludMental_limpio <- SaludMental_limpio %>%
+  mutate(
+    Estancia_Dias_Acotada = pmin(`Estancia Días`, percentil_99_estancia)
+  )
+```
+
+La columna `Estancia_Dias_Acotada` facilita análisis robustos mientras se preserva la serie original.
+
+## Resumen de hallazgos del EDA
+
+En el análisis exploratorio identificamos varios focos de limpieza:
+
+-   Más de 25 columnas con 100% de valores nulos (`Procedimiento 12`-`Procedimiento 20`, `GDR IR`, `CCAA Residencia`, etc.).
+-   Columnas numéricas que en realidad codifican categorías (`Sexo`, `Tipo Alta`, `Nivel Severidad APR`, `Riesgo Mortalidad APR`, `GRD APR`, `CDM APR`).
+-   Campos temporales almacenados como texto (`Fecha de Fin Contacto`, `Mes de Ingreso`).
+-   Variables redundantes (`Edad` y `Edad en Ingreso`) y constantes (`CIE` siempre igual a 10).
+-   Alta tasa de nulos estructurales en diagnósticos/procedimientos secundarios, susceptibles de agregarse en contadores.
+
+Utilizamos estos hallazgos para diseñar la estrategia de feature engineering sin modificar el archivo original.
+
+## Validación del dataset limpio
+
+```{r}
+tibble(
+  filas_original = nrow(SaludMental),
+  columnas_original = ncol(SaludMental),
+  filas_limpio = nrow(SaludMental_limpio),
+  columnas_limpio = ncol(SaludMental_limpio)
+)
+
+top_na_limpio <- SaludMental_limpio %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "columna", values_to = "na") %>%
+  arrange(desc(na)) %>%
+  head(10)
+
+top_na_limpio
+```
+
+El recuento confirma que no se eliminaron filas y que la reducción de columnas es la esperada. Los nulos restantes provienen de ausencias estructurales o conversiones fallidas en fechas (revisar `Fecha de Fin Contacto` y `Mes de Ingreso`).
+
+## Exportar a Excel limpio
+
+```{r}
+write_xlsx(SaludMental_limpio, "../SaludMental_limpio.xlsx")
+```
+
+El archivo `SaludMental_limpio.xlsx` queda listo para carga en la base de datos; el Excel original permanece intacto.
