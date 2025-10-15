@@ -10,4 +10,14 @@ export default defineConfig({
       },
     }),
   ],
+  // Proxy de desarrollo: permite que el front consuma /api sin Nginx
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 })

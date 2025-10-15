@@ -27,5 +27,3 @@ npm run dev
 ```
 
 Mantén ambas terminales abiertas para que el backend y el frontend funcionen en conjunto.
-
-
