@@ -20,7 +20,7 @@ uvicorn app.back.main:app --reload --host 0.0.0.0 --port 8000
 
 ```powershell
 cd <repo root>
-cd app/root
+cd app/front
 npm install
 echo VITE_API_URL=http://localhost:8000 > app\front\.env   # si no existe
 npm run dev
