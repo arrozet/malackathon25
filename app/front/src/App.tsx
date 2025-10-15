@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { ReactElement } from 'react'
+import BrainIcon from './components/BrainIcon'
+import LayoutSection from './components/LayoutSection'
 import './App.css'
 
 type InsightMetric = {
@@ -20,13 +23,26 @@ type InsightSummary = {
   database_connected: boolean
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+// Use relative path for API calls (works through nginx proxy)
+// This way it works from any origin (localhost, IP, domain, etc.)
+const API_BASE_URL = '/api'
 
-function App() {
+const NAV_ITEMS = [
+  { id: 'vision', label: 'Visión general' },
+  { id: 'insights', label: 'Insights clave' },
+  { id: 'roadmap', label: 'Proyección' },
+]
+
+/**
+ * Renderiza la experiencia Brain como una SPA con secciones modulares y datos dinámicos de selección clínica.
+ * @returns ReactElement principal de la interfaz Brain que encapsula toda la experiencia.
+ */
+function App(): ReactElement {
   const [insights, setInsights] = useState<InsightSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Recuperamos los insights del backend de FastAPI, controlando abortos para evitar asignaciones en componentes desmontados.
   useEffect(() => {
     const controller = new AbortController()
 
@@ -70,54 +86,103 @@ function App() {
     )
   }, [insights])
 
+  const highlightPhrases = insights?.highlight_phrases ?? []
+
   return (
     <div className="page">
-      <header className="hero">
-        <div className="hero__badge-row">
-          <span className="badge">Brain · Investigación clínica</span>
-          {connectionBadge}
-        </div>
-        <h1>Insights iniciales sobre admisiones de salud mental</h1>
-        <p className="hero__subtitle">
-          Esta vista previa permite validar flujos de datos y la experiencia visual antes de conectar la base de datos Oracle definitiva.
-        </p>
-        {insights && (
-          <div className="hero__highlights">
-            {insights.highlight_phrases.map((phrase) => (
-              <span key={phrase} className="highlight-pill">
-                {phrase}
-              </span>
-            ))}
-          </div>
-        )}
+      <header className="top-bar">
+        <span className="brand" aria-label="Brain, tu compañera de investigación">
+          Brain<span className="brand__spark" />
+        </span>
+        <nav className="nav" aria-label="Secciones principales de Brain">
+          {NAV_ITEMS.map((item) => (
+            <a key={item.id} href={`#${item.id}`} className="nav__link">
+              {item.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <main className="content">
-        {loading && <p className="status">Cargando insights...</p>}
+        <section className="hero" id="vision">
+          <div className="hero__visual" aria-hidden="true">
+            <BrainIcon className="hero__icon" />
+            <div className="hero__glow" />
+          </div>
+          <div className="hero__content">
+            <div className="hero__badge-row">
+              <span className="badge">Brain · Investigación clínica</span>
+              {connectionBadge}
+            </div>
+            <h1>Insights iniciales sobre admisiones de salud mental</h1>
+            <p className="hero__subtitle">
+              Brain es la compañera artificial para investigadores de salud mental. Centraliza la ingesta de datos, acelera la segmentación y presenta heurísticas accionables para comités clínicos.
+            </p>
+            <div className="hero__highlight-stack" aria-live="polite">
+              {highlightPhrases.length > 0 ? (
+                highlightPhrases.map((phrase) => (
+                  <span key={phrase} className="highlight-pill">
+                    {phrase}
+                  </span>
+                ))
+              ) : (
+                <span className="highlight-pill highlight-pill--placeholder">
+                  Conecta tu dataset para generar titulares inmediatos.
+                </span>
+              )}
+            </div>
+          </div>
+        </section>
 
-        {error && !loading && <p className="status status--error">{error}</p>}
+        <LayoutSection
+          id="insights"
+          title="Insights clave"
+          description="Explora métricas resumidas por dimensión analítica. Cada tarjeta agrupa indicadores calculados a partir de registros de admisiones anonimizadas."
+        >
+          {loading && <p className="status">Cargando insights...</p>}
 
-        {insights && !loading && !error && (
-          <section className="grid" aria-label="Resúmenes por dimensión analítica">
-            {insights.metric_sections.map((section) => (
-              <article key={section.title} className="card" aria-labelledby={`section-${section.title}`}>
-                <div className="card__header">
-                  <h2 id={`section-${section.title}`}>{section.title}</h2>
-                  <span className="card__period">{insights.sample_period}</span>
-                </div>
-                <ul className="card__metric-list">
-                  {section.metrics.map((metric) => (
-                    <li key={metric.title} className="card__metric-item">
-                      <p className="metric__title">{metric.title}</p>
-                      <p className="metric__value">{metric.value}</p>
-                      <p className="metric__description">{metric.description}</p>
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </section>
-        )}
+          {error && !loading && <p className="status status--error">{error}</p>}
+
+          {insights && !loading && !error && (
+            <section className="grid" aria-label="Resúmenes por dimensión analítica">
+              {insights.metric_sections.map((section) => (
+                <article key={section.title} className="card" aria-labelledby={`section-${section.title}`}>
+                  <div className="card__header">
+                    <h3 id={`section-${section.title}`}>{section.title}</h3>
+                    <span className="card__period">{insights.sample_period}</span>
+                  </div>
+                  <ul className="card__metric-list">
+                    {section.metrics.map((metric) => (
+                      <li key={metric.title} className="card__metric-item">
+                        <p className="metric__title">{metric.title}</p>
+                        <p className="metric__value">{metric.value}</p>
+                        <p className="metric__description">{metric.description}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </section>
+          )}
+        </LayoutSection>
+
+        <LayoutSection
+          id="roadmap"
+          title="Próxima iteración"
+          description="Trazamos la hoja de ruta para llegar a la versión evaluable por el jurado del Malackathon."
+        >
+          <ul className="roadmap">
+            <li>
+              <strong>Conexión segura Oracle:</strong> Implementar wallet OCI y rotación de credenciales en despliegues Docker.
+            </li>
+            <li>
+              <strong>Panel comparativo:</strong> Añadir gráficos longitudinales de readmisiones y segmentación por unidades clínicas.
+            </li>
+            <li>
+              <strong>Alertas personalizadas:</strong> Definir reglas de negocio exportables para equipos multidisciplinares.
+            </li>
+          </ul>
+        </LayoutSection>
       </main>
 
       <footer className="footer">

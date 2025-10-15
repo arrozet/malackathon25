@@ -73,9 +73,11 @@ class Config:
     # Application Settings
     APP_ENV: str = os.getenv("APP_ENV", "prod")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+    
+    # Improved CORS configuration for production
     CORS_ORIGINS: str = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173",
+        "http://localhost:5173,http://127.0.0.1:5173,http://158.179.212.221,http://158.179.212.221:80,http://158.179.212.221:3000",
     )
     
     @classmethod
