@@ -20,7 +20,9 @@ type InsightSummary = {
   database_connected: boolean
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+// Use relative path for API calls (works through nginx proxy)
+// This way it works from any origin (localhost, IP, domain, etc.)
+const API_BASE_URL = '/api'
 
 function App() {
   const [insights, setInsights] = useState<InsightSummary | null>(null)
