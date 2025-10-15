@@ -17,6 +17,7 @@ library(readxl)
 library(visdat)
 library(GGally)
 library(patchwork)
+library(ggridges)
 
 # Opciones de gráficos para acelerar el render a PDF
 knitr::opts_chunk$set(
@@ -33,7 +34,7 @@ knitr::opts_chunk$set(
 Leemos el Excel original. Si aparecen warnings en la carga, se muestran justo encima de esta línea en la salida y los comentamos a continuación.
 
 ```{r}
-SaludMental <- read_excel("../SaludMental.xls")
+SaludMental <- read_excel("./SaludMental.xls")
 
 num_filas <- nrow(SaludMental)
 num_columnas <- ncol(SaludMental)
@@ -297,6 +298,181 @@ El análisis IQR diferencia dos tipos de resultados:
 
 A continuación, analizaremos 1 a 1 columnas de gran interés.
 
+## Edad: análisis univariado
+
+La edad de los pacientes es un factor estructural para comprender la carga asistencial. A continuación se valida el campo, se depuran valores no plausibles y se resumen sus características centrales.
+
+```{r}
+datos_edad <- SaludMental %>%
+  mutate(
+    Edad_texto = as.character(`Edad`),
+    Edad_numerica = suppressWarnings(as.numeric(Edad_texto))
+  )
+
+n_total_edad <- nrow(datos_edad)
+n_no_numerico_edad <- sum(is.na(datos_edad$Edad_numerica) & !is.na(datos_edad$Edad_texto))
+n_negativas_edad <- sum(!is.na(datos_edad$Edad_numerica) & datos_edad$Edad_numerica < 0)
+n_mayores_100_edad <- sum(!is.na(datos_edad$Edad_numerica) & datos_edad$Edad_numerica > 100)
+
+resumen_limpieza_edad <- tibble(
+  indicador = c(
+    "Observaciones totales",
+    "Conversiones no numéricas a NA",
+    "Edades negativas marcadas como NA",
+    "Edades > 100 marcadas como NA"
+  ),
+  conteo = c(
+    n_total_edad,
+    n_no_numerico_edad,
+    n_negativas_edad,
+    n_mayores_100_edad
+  )
+)
+
+datos_edad_limpios <- datos_edad %>%
+  mutate(
+    Edad_limpia = dplyr::case_when(
+      is.na(Edad_numerica) ~ NA_real_,
+      Edad_numerica < 0 ~ NA_real_,
+      Edad_numerica > 100 ~ NA_real_,
+      TRUE ~ Edad_numerica
+    )
+  )
+
+edad_metricas <- datos_edad_limpios %>%
+  summarise(
+    conteo = sum(!is.na(Edad_limpia)),
+    media = mean(Edad_limpia, na.rm = TRUE),
+    mediana = median(Edad_limpia, na.rm = TRUE),
+    desviacion = sd(Edad_limpia, na.rm = TRUE),
+    minimo = min(Edad_limpia, na.rm = TRUE),
+    q1 = quantile(Edad_limpia, 0.25, na.rm = TRUE),
+    q3 = quantile(Edad_limpia, 0.75, na.rm = TRUE),
+    maximo = max(Edad_limpia, na.rm = TRUE)
+  ) %>%
+  mutate(across(where(is.numeric), ~ round(., 2)))
+
+knitr::kable(resumen_limpieza_edad, caption = "Depuración de la variable Edad")
+knitr::kable(edad_metricas, caption = "Estadísticas descriptivas de Edad (datos validados)")
+```
+
+```{r, fig.width = 11, fig.height = 6.5}
+edad_para_graficos <- datos_edad_limpios %>%
+  filter(!is.na(Edad_limpia))
+
+hist_edad <- ggplot(edad_para_graficos, aes(x = Edad_limpia)) +
+  geom_histogram(
+    aes(y = after_stat(density)),
+    bins = 20,
+    fill = "#7C3AED",
+    color = "white",
+    alpha = 0.85
+  ) +
+  geom_density(color = "#C4B5FD", linewidth = 1.1) +
+  labs(
+    title = "Distribución de la Edad",
+    subtitle = "Histograma con curva de densidad",
+    x = "Edad (años)",
+    y = "Densidad"
+  ) +
+  theme_minimal(base_size = 13)
+
+box_edad <- ggplot(edad_para_graficos, aes(x = "", y = Edad_limpia)) +
+  geom_boxplot(
+    fill = "#A855F7",
+    color = "#7C3AED",
+    outlier.color = "#C4B5FD",
+    outlier.alpha = 0.6
+  ) +
+  labs(
+    title = "Boxplot de Edad",
+    x = NULL,
+    y = "Edad (años)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+hist_edad / box_edad + plot_layout(heights = c(3, 1))
+```
+
+### Interpretación de la Distribución de la Edad
+
+La visualización combinada del histograma con curva de densidad y el diagrama de caja (boxplot) ofrece una visión completa y coherente sobre la distribución de la variable Edad.
+
+-   **Distribución Simétrica y Normal:** El histograma muestra una clara forma de campana, confirmada por la curva de densidad superpuesta. Esto indica que la distribución de la edad es aproximadamente normal y simétrica. La mayoría de los casos se agrupan en torno a un valor central, y la frecuencia disminuye de manera uniforme hacia los extremos más jóvenes y más ancianos.
+
+-   **Convergencia de las Medidas Centrales:** A diferencia de una distribución asimétrica, en este caso la media, la mediana y la moda son muy similares. El pico del histograma (moda) y la línea central del diagrama de caja (mediana) se sitúan alrededor de los 45-50 años. Esta simetría hace que la media aritmética sea una medida fiable y representativa del "caso típico" en cuanto a la edad.
+
+-   **Concentración en la Edad Adulta:** El diagrama de caja revela que el 50% central de los individuos (el rango intercuartílico) se encuentra aproximadamente entre los 38 y los 60 años. Esto indica que el núcleo de la población analizada corresponde a adultos de mediana edad.
+
+-   **Presencia de Outliers no Influyentes:** El diagrama de caja señala la existencia de algunos valores atípicos (outliers), representados como puntos individuales por encima y por debajo de los "bigotes". Estos casos representan individuos en los extremos de edad (muy jóvenes o muy mayores) que se desvían de la norma. Sin embargo, su escaso número no altera la forma fundamental de la distribución normal.
+
+**En resumen:** La edad de la población estudiada sigue un patrón de distribución normal, con una fuerte concentración de individuos en la mediana edad. Esta simetría sugiere que no existen sesgos significativos hacia grupos de edad particulares (ni predominantemente jóvenes ni ancianos). Cualquier análisis o modelo que utilice la edad como variable predictora puede beneficiarse de esta distribución bien comportada, ya que cumple con los supuestos de normalidad que muchos métodos estadísticos requieren.
+
+## Sexo: distribución de episodios
+
+El campo `Sexo` se almacena como código numérico. Se harmonizan las etiquetas, se calculan frecuencias absolutas y relativas, y se visualiza la participación de cada grupo.
+
+```{r}
+tabla_sexo <- SaludMental %>%
+  mutate(
+    sexo_original = as.character(Sexo),
+    sexo_num = suppressWarnings(as.numeric(sexo_original)),
+    sexo_etiqueta = case_when(
+      is.na(sexo_num) ~ "No disponible",
+      sexo_num == 1 ~ "Hombre",
+      sexo_num == 2 ~ "Mujer",
+      sexo_num == 9 ~ "No especificado",
+      TRUE ~ "Valor no mapeado"
+    )
+  ) %>%
+  count(sexo_etiqueta, name = "conteo") %>%
+  mutate(
+    porcentaje = round(100 * conteo / sum(conteo), 1)
+  ) %>%
+  arrange(desc(conteo)) %>%
+  mutate(
+    etiqueta = paste0(conteo, " casos (", porcentaje, "%)"),
+    sexo_etiqueta = forcats::fct_reorder(sexo_etiqueta, conteo)
+  )
+
+tabla_sexo %>%
+  select(Sexo = sexo_etiqueta, Conteo = conteo, Porcentaje = porcentaje) %>%
+  arrange(desc(Conteo)) %>%
+  knitr::kable(caption = "Frecuencia absoluta y relativa de Sexo")
+```
+
+```{r, fig.width = 9, fig.height = 6}
+ggplot(tabla_sexo, aes(x = sexo_etiqueta, y = conteo)) +
+  geom_col(fill = "#7C3AED", alpha = 0.9) +
+  geom_text(
+    aes(label = paste0(porcentaje, "%")),
+    vjust = -0.35,
+    color = "#0D0C1D",
+    fontface = "bold"
+  ) +
+  expand_limits(y = max(tabla_sexo$conteo) * 1.12) +
+  labs(
+    title = "Distribución de episodios por sexo",
+    subtitle = "Conteo y porcentaje relativo de casos",
+    x = NULL,
+    y = "Número de casos"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+### Interpretación de la Distribución por Sexo
+
+El gráfico de barras muestra de forma directa y concisa la distribución de los episodios clínicos según el sexo de los individuos.
+
+-   **Clara Disparidad entre Sexos:** La observación más inmediata es la diferencia en la frecuencia de casos entre hombres y mujeres. El gráfico evidencia que no hay una distribución equitativa.
+
+-   **Predominio Masculino:** Los hombres representan la mayoría de los casos, constituyendo un **55.7%** del total. En contraste, las mujeres conforman el **44.2%**. Esta diferencia de más de 11 puntos porcentuales indica que, en el contexto de los datos analizados, los hombres experimentan estos episodios con una frecuencia notablemente mayor.
+
+-   **Calidad del Dato:** La categoría "No especificado" es prácticamente inexistente, con solo un **0.1%** de los casos. Esto es un fuerte indicador de la alta calidad y completitud de los datos para esta variable, lo que confiere una gran fiabilidad a la comparación entre los dos sexos.
+
+**En resumen:** El conjunto de datos presenta un claro sesgo de sexo, con una mayor incidencia de episodios en la población masculina. Esta disparidad es un hallazgo fundamental y debe ser considerado como un factor relevante en cualquier análisis posterior. Investigar las posibles causas de esta diferencia podría ser un punto clave para entender la naturaleza del fenómeno estudiado.
+
 ## Estancia Días: exploración gráfica combinada
 
 La duración de las estancias hospitalarias es una métrica crítica para detectar posibles ineficiencias o casos clínicos complejos. La combinación de histogramas y diagramas de caja permite identificar simultáneamente la forma de la distribución y los valores atípicos que podrían requerir revisión clínica o protocolos diferenciales.
@@ -340,7 +516,7 @@ hist_estancia / box_estancia +
 
 La visualización combinada del histograma y el diagrama de caja ofrece una visión clara y contundente sobre la naturaleza de la variable `Estancia Días`.
 
-1.  **Fuerte Asimetría Positiva:** El histograma muestra una distribución con un marcado sesgo hacia la derecha (asimetría positiva). Esto significa que la gran mayoría de las estancias hospitalarias son de corta duración, con una alta concentración de casos en los primeros días tras el ingreso.
+1.  **Fuerte Asimetría Positiva:** El histograma muestra una distribución con un marcado sesgo hacia la izquierda. Esto significa que la gran mayoría de las estancias hospitalarias son de corta duración, con una alta concentración de casos en los primeros días tras el ingreso.
 
 2.  **Presencia de Outliers Relevantes:** La larga cola hacia la derecha en el histograma, confirmada por los numerosos puntos individuales en el diagrama de caja, indica la presencia de valores atípicos significativos. Estos puntos representan un número reducido de pacientes cuyas estancias son excepcionalmente largas en comparación con la norma.
 
@@ -374,10 +550,281 @@ ggplot(diagnosticos_top, aes(x = `Diagnóstico Principal`, y = casos)) +
   theme(plot.margin = margin(10, 30, 10, 10))
 ```
 
-### **Interpretación de los diagnósticos predominantes (CORREGIR)**
+### **Interpretación de los diagnósticos predominantes**
 
-1.  **Alta concentración en trastornos psicóticos y afectivos:** Los códigos del capítulo F, como `F20.9` (esquizofrenia, tipo no especificado) y `F31.9` (trastorno bipolar), dominan el ranking, confirmando la carga que representan los trastornos psiquiátricos severos.
+La gráfica de barras horizontales ofrece una visión clara e inequívoca sobre la distribución de los diagnósticos más frecuentes en el conjunto de datos.
 
-2.  **Patrones clínicos repetitivos:** La repetición de códigos muy similares sugiere episodios recurrentes o ingresos múltiples por la misma causa, lo que obliga a examinar la continuidad asistencial y los planes de seguimiento ambulatorio.
+-   **Dominancia de un Único Diagnóstico:** La visualización revela una concentración extraordinaria en el código **F20.0 (Esquizofrenia paranoide)**, que, con 4,573 casos, supera por más del triple al segundo diagnóstico más común. Esta abrumadora frecuencia lo posiciona como el problema de salud central y más prevalente dentro de esta población de pacientes.
 
-3.  **Cartera de servicios centrada en salud mental grave:** La escasa presencia de diagnósticos somáticos indica que el recurso asistencial analizado está altamente especializado. Esto debe reflejarse en la planificación de recursos y en la interpretación de métricas de desempeño.
+-   **Distribución de Pareto:** Se observa una distribución muy asimétrica, similar al principio de Pareto, donde un número muy reducido de diagnósticos representa una proporción masiva de los casos totales. Después del F20.0, la frecuencia desciende bruscamente con el **F60.3 (Trastorno de inestabilidad emocional de la personalidad)** y luego de manera más gradual, formando una "larga cola" de diagnósticos menos comunes.
+
+-   **Agrupación por Patologías:** Es notable que la mayoría de los códigos en el top 15 pertenecen a un espectro limitado de trastornos mentales graves. Predominan los códigos del grupo **F20-F29 (Esquizofrenia, trastorno esquizotípico y trastornos de ideas delirantes)** y del grupo **F30-F39 (Trastornos del humor)**. Esto sugiere que el conjunto de datos probablemente proviene de una unidad o servicio especializado en psicosis y trastornos afectivos graves.
+
+**En resumen:** El análisis está fuertemente dominado por el diagnóstico de esquizofrenia paranoide. Esto indica que cualquier estrategia de gestión, asignación de recursos o análisis predictivo debe tener como eje central el abordaje de esta patología. La prevalencia de otros trastornos psicóticos y de la personalidad, aunque menor, señala las comorbilidades y diagnósticos secundarios más probables en esta población específica. Ignorar esta marcada asimetría conduciría a conclusiones generalistas y poco representativas de la realidad clínica que reflejan los datos.
+
+#Análisis bivariable
+
+## Edad y Sexo: análisis comparativo
+
+La comparación conjunta de edad y sexo permite detectar diferencias en el perfil etario de los episodios y anticipar posibles segmentaciones clínicas.
+
+```{r}
+datos_edad_sexo <- datos_edad_limpios %>%
+  mutate(
+    sexo_original = as.character(Sexo),
+    sexo_num = suppressWarnings(as.numeric(sexo_original)),
+    sexo_factor = case_when(
+      sexo_num == 1 ~ "Hombre",
+      sexo_num == 2 ~ "Mujer",
+      sexo_num == 9 ~ "No especificado",
+      is.na(sexo_num) ~ "No disponible",
+      TRUE ~ "Valor no mapeado"
+    )
+  ) %>%
+  mutate(
+    sexo_factor = forcats::fct_relevel(
+      factor(sexo_factor),
+      "Hombre", "Mujer", "No especificado", "No disponible", "Valor no mapeado"
+    )
+  )
+
+datos_edad_sexo_filtrado <- datos_edad_sexo %>%
+  filter(!is.na(Edad_limpia), !is.na(sexo_factor), sexo_factor != "Valor no mapeado")
+
+registros_utilizados <- nrow(datos_edad_sexo_filtrado)
+registros_excluidos <- nrow(datos_edad_sexo) - registros_utilizados
+
+cat(
+  "Registros utilizados en el análisis bivariado: ", registros_utilizados,
+  " | Registros excluidos por NA o códigos no mapeados: ", registros_excluidos,
+  "\n",
+  sep = ""
+)
+
+estadisticas_edad_sexo <- datos_edad_sexo_filtrado %>%
+  group_by(sexo_factor) %>%
+  summarise(
+    n = n(),
+    media = mean(Edad_limpia),
+    mediana = median(Edad_limpia),
+    desviacion = sd(Edad_limpia),
+    minimo = min(Edad_limpia),
+    maximo = max(Edad_limpia),
+    .groups = "drop"
+  ) %>%
+  mutate(across(where(is.numeric), ~ round(., 2)))
+
+media_hombre <- estadisticas_edad_sexo %>% filter(sexo_factor == "Hombre") %>% pull(media)
+media_mujer <- estadisticas_edad_sexo %>% filter(sexo_factor == "Mujer") %>% pull(media)
+mediana_hombre <- estadisticas_edad_sexo %>% filter(sexo_factor == "Hombre") %>% pull(mediana)
+mediana_mujer <- estadisticas_edad_sexo %>% filter(sexo_factor == "Mujer") %>% pull(mediana)
+sd_hombre <- estadisticas_edad_sexo %>% filter(sexo_factor == "Hombre") %>% pull(desviacion)
+sd_mujer <- estadisticas_edad_sexo %>% filter(sexo_factor == "Mujer") %>% pull(desviacion)
+
+dif_media <- if (!is.na(media_hombre) && !is.na(media_mujer)) round(abs(media_hombre - media_mujer), 2) else NA_real_
+dif_mediana <- if (!is.na(mediana_hombre) && !is.na(mediana_mujer)) round(abs(mediana_hombre - mediana_mujer), 2) else NA_real_
+
+cola_maxima <- datos_edad_sexo_filtrado %>%
+  filter(sexo_factor %in% c("Hombre", "Mujer")) %>%
+  group_by(sexo_factor) %>%
+  summarise(maximo = max(Edad_limpia), .groups = "drop")
+
+knitr::kable(
+  estadisticas_edad_sexo,
+  col.names = c(
+    "Sexo",
+    "Casos",
+    "Media",
+    "Mediana",
+    "Desviación estándar",
+    "Mínimo",
+    "Máximo"
+  ),
+  caption = "Estadísticas descriptivas de Edad por Sexo"
+)
+```
+
+```{r, fig.width = 11, fig.height = 6.5}
+paleta_sexo <- c(
+  "Hombre" = "#7C3AED",
+  "Mujer" = "#C4B5FD",
+  "No especificado" = "#4B5563",
+  "No disponible" = "#9CA3AF"
+)
+
+ggplot(datos_edad_sexo_filtrado, aes(x = Edad_limpia, y = sexo_factor, fill = sexo_factor)) +
+  geom_density_ridges(
+    alpha = 0.65,
+    scale = 1.1,
+    color = "#0D0C1D",
+    size = 0.4
+  ) +
+  scale_fill_manual(values = paleta_sexo, guide = "none") +
+  labs(
+    title = "Distribución de la Edad por Sexo",
+    subtitle = "Curvas de densidad superpuestas mediante ggridges",
+    x = "Edad (años)",
+    y = NULL
+  ) +
+  theme_ridges(font_size = 13, grid = TRUE) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    axis.title.y = element_blank()
+  )
+```
+
+```{r, fig.width = 10, fig.height = 6}
+ggplot(datos_edad_sexo_filtrado, aes(x = sexo_factor, y = Edad_limpia, fill = sexo_factor)) +
+  geom_violin(trim = FALSE, alpha = 0.6, color = NA) +
+  geom_boxplot(width = 0.15, fill = "#E5E7EB", alpha = 0.7, outlier.alpha = 0.5) +
+  scale_fill_manual(values = paleta_sexo, guide = "none") +
+  labs(
+    title = "Contraste de edad por sexo",
+    subtitle = "Violín con boxplot superpuesto",
+    x = NULL,
+    y = "Edad (años)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+### Interpretación Comparativa de la Distribución de Edad por Sexo
+
+La combinación del gráfico de curvas de densidad y el de violín con diagrama de caja ofrece un análisis profundo y multifacético de cómo se distribuye la edad en los diferentes grupos de sexo, confirmando hallazgos y añadiendo nuevos niveles de detalle.
+
+-   **Consistente Similitud entre Hombres y Mujeres:** Ambas visualizaciones confirman de manera contundente que los perfiles de edad para hombres y mujeres son prácticamente idénticos. Las curvas de densidad muestran una forma de campana unimodal y simétrica casi superponible, y los gráficos de violín refuerzan esta idea con su forma y la posición de los diagramas de caja internos. La mediana (línea gruesa en el boxplot) y la concentración principal de casos (la parte más ancha del violín) se sitúan claramente en la adultez media para ambos grupos.
+
+-   **El Grupo "No Especificado" como una Entidad Distinta:** El hallazgo más revelador es la marcada diferencia del grupo "No especificado". El gráfico de densidad muestra que su distribución no es una campana simple, sino multimodal, con un pico dominante y muy pronunciado en una edad joven (alrededor de los 25-30 años). El gráfico de violín cuantifica esto a la perfección:
+
+    -   **Mediana Mucho Más Baja:** El diagrama de caja dentro del violín gris muestra una mediana drásticamente inferior (en torno a los 30 años) en comparación con los grupos de hombre y mujer (cercana a los 50).
+
+    -   **Forma Reveladora:** La forma del violín para este grupo no es simétrica; su base ancha en la parte inferior y su cuerpo ascendente confirman que la mayoría de los casos se concentran en edades tempranas.
+
+-   **Visualización Complementaria:** Mientras que las curvas de densidad son excelentes para mostrar la forma general y los picos de la distribución, los gráficos de violín y caja son superiores para comparar directamente las medidas estadísticas clave como la mediana y el rango intercuartílico. Juntos, no dejan lugar a dudas sobre las diferencias y similitudes.
+
+**En resumen:** Los datos demuestran con claridad dos realidades distintas. Por un lado, la población principal de hombres y mujeres comparte un perfil de edad idéntico, con una incidencia centrada en la mediana edad. Por otro lado, existe un subgrupo muy pequeño pero demográficamente único, clasificado como "No especificado", que se caracteriza por una edad de afectación significativamente más temprana. Esta cohorte no es un artefacto aleatorio, sino un grupo con características propias que lo diferencian fundamentalmente del resto de la muestra.
+
+## Estancia Días por Diagnóstico y Tipo de Alta
+
+La duración de la hospitalización está mediada tanto por la complejidad clínica del diagnóstico principal como por la vía de resolución del episodio. Para evitar que los casos ultralargos compriman la escala de análisis, se restringe la muestra al percentil 99 de `Estancia Días`; el umbral resultante se reporta más abajo.
+
+```{r}
+datos_estancia_crudos <- SaludMental %>%
+  mutate(
+    `Estancia Días` = readr::parse_number(as.character(`Estancia Días`)),
+    `Diagnóstico Principal` = stringr::str_squish(as.character(`Diagnóstico Principal`)),
+    `Tipo Alta` = stringr::str_squish(as.character(`Tipo Alta`))
+  ) %>%
+  filter(
+    !is.na(`Estancia Días`),
+    !is.na(`Diagnóstico Principal`),
+    `Diagnóstico Principal` != "",
+    !is.na(`Tipo Alta`),
+    `Tipo Alta` != ""
+  )
+
+umbral_99_estancia <- stats::quantile(datos_estancia_crudos$`Estancia Días`, probs = 0.99, na.rm = TRUE)
+
+datos_estancia_limpios <- datos_estancia_crudos %>%
+  filter(`Estancia Días` <= umbral_99_estancia)
+
+diagnosticos_top_10 <- datos_estancia_limpios %>%
+  count(`Diagnóstico Principal`, sort = TRUE) %>%
+  slice_head(n = 10) %>%
+  pull(`Diagnóstico Principal`)
+
+datos_estancia_top10 <- datos_estancia_limpios %>%
+  filter(`Diagnóstico Principal` %in% diagnosticos_top_10) %>%
+  mutate(
+    diagnostico_ordenado = forcats::fct_reorder(`Diagnóstico Principal`, `Estancia Días`, .fun = stats::median, .desc = FALSE)
+  )
+
+resumen_diag_estancia <- datos_estancia_top10 %>%
+  group_by(`Diagnóstico Principal`) %>%
+  summarise(
+    mediana_estancia = stats::median(`Estancia Días`),
+    q3_estancia = stats::quantile(`Estancia Días`, probs = 0.75),
+    n = dplyr::n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(mediana_estancia))
+
+diagnostico_mayor_mediana <- resumen_diag_estancia %>% slice_max(mediana_estancia, n = 1)
+diagnostico_menor_mediana <- resumen_diag_estancia %>% slice_min(mediana_estancia, n = 1)
+
+datos_estancia_tipo_alta <- datos_estancia_limpios %>%
+  mutate(
+    tipo_alta_limpio = `Tipo Alta` %>%
+      stringr::str_to_sentence(locale = "es") %>%
+      stringr::str_replace_all("  ", " ") %>%
+      stringr::str_squish()
+  ) %>%
+  filter(tipo_alta_limpio != "") %>%
+  mutate(
+    tipo_alta_ordenado = forcats::fct_reorder(tipo_alta_limpio, `Estancia Días`, .fun = stats::median, .desc = FALSE)
+  )
+
+resumen_tipo_alta <- datos_estancia_tipo_alta %>%
+  group_by(tipo_alta_limpio) %>%
+  summarise(
+    mediana_estancia = stats::median(`Estancia Días`),
+    n = dplyr::n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(mediana_estancia))
+
+tipo_alta_mayor_mediana <- resumen_tipo_alta %>% slice_max(mediana_estancia, n = 1)
+tipo_alta_menor_mediana <- resumen_tipo_alta %>% slice_min(mediana_estancia, n = 1)
+
+porcentaje_retencion_estancia <- sprintf(
+  "%.1f",
+  100 * nrow(datos_estancia_limpios) / nrow(datos_estancia_crudos)
+)
+```
+
+En total, la depuración mantiene `r porcentaje_retencion_estancia`% de los episodios con información válida. El recorte al percentil 99 equivale a `r round(umbral_99_estancia, 1)` días de estancia, valor a partir del cual los casos son muy excepcionales y se analizan aparte.
+
+```{r, fig.width = 11, fig.height = 7}
+ggplot(datos_estancia_top10, aes(x = `Estancia Días`, y = diagnostico_ordenado)) +
+  geom_boxplot(
+    fill = "#7C3AED",
+    alpha = 0.65,
+    outlier.color = "#A855F7",
+    outlier.alpha = 0.5,
+    color = "#0D0C1D"
+  ) +
+  labs(
+    title = "Distribución de la Duración de Estancia por Diagnóstico Principal (Top 10)",
+    x = "Estancia (días)",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+```{r, fig.width = 11, fig.height = 6.5}
+ggplot(datos_estancia_tipo_alta, aes(x = `Estancia Días`, y = tipo_alta_ordenado)) +
+  geom_boxplot(
+    fill = "#7C3AED",
+    alpha = 0.65,
+    outlier.color = "#A855F7",
+    outlier.alpha = 0.5,
+    color = "#0D0C1D"
+  ) +
+  labs(
+    title = "Distribución de la Duración de Estancia por Tipo de Alta",
+    x = "Estancia (días)",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+### Interpretación de la Duración de Estancia por Diagnóstico Principal
+
+Este gráfico de diagramas de caja (boxplots) ofrece una comparación detallada de la duración de la estancia hospitalaria para los 10 diagnósticos principales, revelando un patrón consistente y muy informativo.
+
+-   **Notable Homogeneidad en la Estancia Típica:** La observación más sorprendente es la gran similitud en la distribución de las estancias para la mayoría de los pacientes, independientemente del diagnóstico. Las "cajas" (que representan el 50% central de los casos) son muy parecidas en longitud y posición para casi todos los códigos. Esto indica que la duración de una hospitalización "estándar" o "típica" es muy consistente, con medianas que se sitúan generalmente entre los 10 y 15 días.
+
+-   **La Universalidad de las Estancias Atípicas:** El hallazgo más crítico es la presencia de una larga cola de valores atípicos (outliers), representados por los puntos a la derecha de cada diagrama. Este patrón no es exclusivo de un diagnóstico, sino una característica **universal** en todos los grupos. Esto significa que en cada una de las patologías más frecuentes, existe un subgrupo de pacientes cuyas estancias se prolongan de manera excepcional, superando con creces la norma.
+
+-   **Sutiles Diferencias entre Diagnósticos:** Aunque el patrón general es homogéneo, se pueden apreciar ligeras diferencias. Por ejemplo, los diagnósticos **F31.2 (Trastorno afectivo bipolar, episodio maníaco con síntomas psicóticos)** y **F25.0 (Trastorno esquizoafectivo, tipo maníaco)** parecen tener las cajas ligeramente desplazadas hacia la derecha, sugiriendo que sus estancias típicas tienden a ser un poco más largas en comparación con otras, como el **F60.3 (Trastorno de inestabilidad emocional de la personalidad)**.
+
+**En resumen:** Si bien la gran mayoría de las hospitalizaciones siguen un curso predecible y de duración similar (entre 1 y 3 semanas) sin importar el diagnóstico principal, el verdadero desafío para la gestión de recursos y la planificación clínica reside en los casos atípicos. La existencia de pacientes con estancias extremadamente largas es un fenómeno sistémico que afecta a todas las patologías principales, y no un problema aislado de una condición específica. Identificar los factores que predicen estas estancias prolongadas es, por tanto, mucho más crucial que analizar las pequeñas diferencias en las estancias típicas.
