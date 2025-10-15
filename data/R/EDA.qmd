@@ -1,13 +1,294 @@
 ---
-title: "Malackathon"
-format: html
+title: "EDA Salud Mental"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    fig-format: jpeg
+    dpi: 120
 editor: visual
 ---
 
-Cargar dataset (Tiene warnings)
+## Librerías
 
 ```{r}
+library(tidyverse)
 library(readxl)
-SaludMental <- read_excel("../SaludMental.xls")
-View(SaludMental)
+library(visdat)
+library(GGally)
+
+# Opciones de gráficos para acelerar el render a PDF
+knitr::opts_chunk$set(dev = "jpeg", dpi = 120, dev.args = list(quality = 80))
 ```
+
+## Carga de datos
+
+Leemos el Excel original. Si aparecen warnings en la carga, se muestran justo encima de esta línea en la salida y los comentamos a continuación.
+
+```{r}
+SaludMental <- read_excel("../SaludMental.xls")
+
+num_filas <- nrow(SaludMental)
+num_columnas <- ncol(SaludMental)
+
+cat("Dimensiones: ", num_filas, " filas x ", num_columnas, " columnas\n", sep = "")
+head(SaludMental)
+```
+
+Comentarios sobre la carga
+
+-   El dataset tiene `r num_filas` filas y `r num_columnas` columnas.
+-   Durante la importación inicial del conjunto de datos, se mostraron advertencias del tipo Expecting logical ... got '0UT94ZZ'. Estos avisos se produjeron porque R infirió incorrectamente que algunas columnas contenían datos lógicos (verdadero/falso) basándose en sus primeras filas, para luego encontrar códigos de texto que no coincidían con esa suposición. Para resolver esto y prevenir cualquier pérdida de información, se especificó que estas columnas se importaran como texto, garantizando así que todos los valores originales fueran conservados íntegramente para el análisis.
+
+## Estructura y tipos de datos
+
+```{r}
+glimpse(SaludMental)
+
+tipos <- sapply(SaludMental, function(x) class(x)[1])
+as.data.frame(table(tipos))
+```
+
+Interpretación
+
+El conjunto de datos contiene `r nrow(SaludMental)` filas y `r ncol(SaludMental)` columnas. La distribución de tipos de datos es: `r paste(names(sort(table(tipos), decreasing = TRUE)), collapse = ", ")`.
+
+Esta distribución inicial, sin embargo, enmascara la verdadera naturaleza de las variables. Se han identificado 26 columnas (logical) que están completamente vacías y serán eliminadas. Adicionalmente, numerosas variables leídas como numéricas (Sexo) o texto (País Nacimiento) son en realidad categorías codificadas que se convertirán a factores. Finalmente, columnas de fecha mal interpretadas (Fecha de Fin Contacto) serán corregidas. Estos pasos de limpieza son esenciales antes de proceder con el análisis visual y estadístico.
+
+## Valores faltantes (nulos)
+
+```{r}
+na_por_col <- SaludMental %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "columna", values_to = "na") %>%
+  arrange(desc(na)) %>%
+  mutate(pct_na = 100 * na / num_filas)
+
+na_top <- head(na_por_col, 3)
+na_por_col
+
+ggplot(na_por_col, aes(x = reorder(columna, na), y = na)) +
+  geom_col(fill = "#2E86C1") +
+  coord_flip() +
+  labs(x = "Columna", y = "Conteo NA", title = "Valores faltantes por columna")
+
+sample_size <- min(10000, nrow(SaludMental))
+muestra_miss <- dplyr::slice_sample(SaludMental, n = sample_size)
+vis_miss(muestra_miss, warn_large_data = FALSE)
+```
+
+Interpretación
+
+El análisis revela tres grupos claros de variables según la cantidad de datos faltantes:
+
+1.  Columnas Completamente Vacías (100% NA) El hallazgo más evidente, visible tanto en el gráfico de barras como en la tabla, es la existencia de un gran número de columnas (más de 25) que están completamente vacías.
+
+Evidencia: Columnas como CCAA Residencia, Procedimiento 12 hasta Procedimiento 20, GDR IR, y muchas otras, tienen 21,210 valores faltantes, lo que corresponde al 100% de las filas.
+
+Causa Probable: Estas columnas podrían ser placeholders en la base de datos original, campos que nunca se utilizan, o datos que no se extrajeron correctamente durante el proceso de recopilación.
+
+Acción Inmediata: Al no contener ninguna información, estas columnas deben ser eliminadas del dataset. No aportan valor analítico y solo añaden ruido y complejidad.
+
+2.  Columnas con Alta Tasa de Valores Faltantes (\>90% NA) Existe un segundo grupo de variables, principalmente las relacionadas con diagnósticos y procedimientos secundarios (ej. Diagnóstico 20 hasta Diagnóstico 3), que tienen una tasa de valores faltantes muy alta, aunque no del 100%.
+
+Evidencia: El gráfico vis_miss muestra un patrón claro: la ausencia de datos en Diagnóstico 5, por ejemplo, casi siempre implica la ausencia en Diagnóstico 6 y posteriores.
+
+Interpretación: Esto no es un error, sino una ausencia de datos estructural. Simplemente significa que la mayoría de los pacientes no tienen tantos diagnósticos o procedimientos registrados. Un paciente con solo dos diagnósticos tendrá NA en las columnas Diagnóstico 3 en adelante.
+
+Acción Recomendada: Para la mayoría de los análisis generales, estas columnas con más del 95% de datos faltantes también pueden ser eliminadas. Sin embargo, de este patrón se puede extraer una nueva variable muy útil: un conteo del número total de diagnósticos o procedimientos por paciente, lo que convierte el problema de los datos faltantes en una nueva característica (feature engineering).
+
+3.  Variables Clave con Datos Completos o Casi Completos Afortunadamente, las variables que parecen ser centrales para el análisis están en su mayoría completas.
+
+Evidencia: La parte inferior del gráfico de barras muestra que columnas como Categoría, Comunidad Autónoma, Diagnóstico Principal, Sexo, Edad en Ingreso y Estancia Días tienen muy pocos o ningún valor faltante.
+
+Interpretación: Esta es una excelente noticia. Significa que el núcleo del dataset es robusto y fiable, permitiendo realizar análisis descriptivos y de modelado sin necesidad de técnicas complejas de imputación de datos.
+
+## Duplicados
+
+```{r}
+num_duplicadas <- sum(duplicated(SaludMental))
+pct_duplicadas <- round(100 * num_duplicadas / num_filas, 2)
+cat("Filas duplicadas: ", num_duplicadas, " (", pct_duplicadas, "%)\n", sep = "")
+
+SaludMental %>% filter(duplicated(.)) %>% head(10)
+```
+
+Interpretación
+
+El análisis de duplicados ha confirmado que el conjunto de datos no contiene ninguna fila repetida. El conteo de Filas duplicadas es 0, lo que representa el 0% del total de las observaciones.
+
+Esto es un indicador excelente de la calidad de los datos, ya que significa que cada registro en el dataset es único y representa una observación distinta. Por lo tanto, no es necesario realizar ninguna acción de limpieza para eliminar duplicados, y podemos proceder con el análisis con la confianza de que no estamos sobrecontando ninguna entrada.
+
+## Variables numéricas: resúmenes y gráficos
+
+```{r}
+numericas <- SaludMental %>% select(where(is.numeric))
+n_num <- ncol(numericas)
+cat("Variables numéricas: ", n_num, "\n", sep = "")
+
+
+summary(numericas)
+
+numericas %>%
+pivot_longer(everything(), names_to = "variable", values_to = "valor") %>%
+ggplot(aes(x = valor)) +
+geom_histogram(bins = 30, fill = "#6C3483", color = "white") +
+facet_wrap(~ variable, scales = "free", ncol = 2) +
+labs(title = "Histogramas variables numéricas", x = NULL, y = "Frecuencia")
+
+numericas %>%
+pivot_longer(everything(), names_to = "variable", values_to = "valor") %>%
+ggplot(aes(x = variable, y = valor)) +
+geom_boxplot(fill = "#F39C12") +
+coord_flip() +
+labs(title = "Boxplots variables numéricas", x = "Variable", y = NULL)
+
+
+GGally::ggpairs(numericas)
+
+```
+
+Análisis de Variables Numéricas Se identificaron un total de 13 variables con tipo de dato numérico. Sin embargo, un análisis de su distribución y valores revela que no todas son cuantitativas en la práctica. Podemos clasificarlas en tres grupos distintos.
+
+1.  Variables Cuantitativas Reales Estas variables representan mediciones continuas y son clave para el análisis.
+
+Edad y Edad en Ingreso: Ambas muestran una distribución casi normal, ligeramente sesgada a la derecha, con un pico en torno a los 40-50 años. El summary y el gráfico de pares (ggpairs) confirman que son prácticamente idénticas (correlación de 1.000), lo que indica que una de ellas es redundante y podría eliminarse.
+
+Estancia Días, Coste APR y Peso Español APR: Estos son los ejemplos más claros de variables cuantitativas. Los histogramas muestran que las tres tienen una fuerte asimetría positiva (sesgo a la derecha). Esto es típico en datos de salud: la mayoría de las estancias y costes son bajos, pero hay unos pocos casos extremos (outliers) con valores muy altos. El boxplot de Coste APR visualiza perfectamente esta característica, con una caja compacta y muchos puntos atípicos.
+
+2.  Variables Categóricas Codificadas como Números La mayoría de las variables numéricas en este dataset no son realmente cuantitativas, sino códigos que representan categorías.
+
+Evidencia: Los histogramas para Sexo, Tipo Alta, Nivel Severidad APR, Riesgo Mortalidad APR, GRD APR y CDM APR no muestran una distribución continua, sino barras discretas en valores enteros específicos. Por ejemplo, Sexo se concentra en los valores 1 y 2 (y un valor anómalo en 9), y Nivel Severidad APR en 1, 2, 3 y 4.
+
+Interpretación: Tratar estas variables como números en un modelo (por ejemplo, calculando su media) sería incorrecto. Deben ser convertidas a factores para un análisis adecuado, asignando etiquetas a cada nivel (ej. Sexo: 1 = "Hombre", 2 = "Mujer").
+
+3.  Variables Constantes o Inválidas CIE: El summary y el histograma muestran que esta variable tiene un valor constante de 10 para todos los registros. Al no tener variabilidad, no aporta información analítica y no se puede calcular su correlación con otras variables (por eso aparece como NA en el gráfico ggpairs). Esta columna debería ser eliminada.
+
+Correlaciones y Conclusiones Clave El gráfico de pares (ggpairs) nos permite visualizar las relaciones entre las variables:
+
+Redundancia: Como se mencionó, la correlación perfecta (1.000) entre Edad y Edad en Ingreso confirma que son la misma información.
+
+Relaciones Esperadas: Se observa una correlación positiva, aunque moderada, entre Estancia Días y Coste APR (Corr: 0.231*). Lógicamente, estancias más largas tienden a ser más costosas. De manera similar, Nivel Severidad APR tiene una correlación positiva con Peso Español APR (Corr: 0.251*), indicando que casos más severos están asociados a un mayor peso (y por ende, coste).
+
+Necesidad de Transformación: La forma de "L" en los gráficos de dispersión que involucran a Estancia Días y Coste APR es un síntoma claro de su sesgo. Para algunos modelos predictivos, aplicar una transformación logarítmica a estas variables podría ser beneficioso para normalizar su distribución.
+
+## Variables categóricas: frecuencias y gráficos
+
+```{r}
+categoricas <- SaludMental %>% select(where(~ is.character(.x) || is.factor(.x)))
+n_cat <- ncol(categoricas)
+cat("Variables categóricas: ", n_cat, "\n", sep = "")
+
+vars_interes <- c(
+  "Comunidad Autónoma",
+  "Nombre",
+  "Fecha de Fin Contacto",
+  "Diagnóstico Principal",
+  "Procedimiento 1",
+  "Número de registro anual",
+  "Centro Recodificado",
+  "País Nacimiento",
+  "Mes de Ingreso"
+)
+
+categoricas_sel <- categoricas %>% select(all_of(vars_interes))
+vars_to_show <- colnames(categoricas_sel)
+top_k <- 10
+
+cat("Se grafican ", length(vars_to_show), " variables seleccionadas manualmente.\n", sep = "")
+cat("Variables: ", paste(vars_to_show, collapse = ", "), "\n", sep = "")
+
+if (length(vars_to_show) > 0) {
+  counts_cat <- categoricas_sel %>%
+    pivot_longer(everything(), names_to = "variable", values_to = "valor") %>%
+    filter(!is.na(valor)) %>%
+    group_by(variable, valor) %>%
+    summarise(n = n(), .groups = "drop")
+
+  cat_top <- counts_cat %>%
+    group_by(variable) %>%
+    slice_max(n, n = top_k, with_ties = FALSE) %>%
+    ungroup() %>%
+    group_by(variable) %>%
+    mutate(valor = forcats::fct_reorder(as.factor(valor), n)) %>%
+    ungroup()
+
+  ggplot(cat_top, aes(x = valor, y = n)) +
+    geom_col(fill = "#27AE60") +
+    coord_flip() +
+    facet_wrap(~ variable, scales = "free_y", ncol = 2) +
+    labs(
+      x = "Categoría",
+      y = "Frecuencia",
+      title = paste0("Top ", top_k, " categorías por variable (selección manual)")
+    )
+} else {
+  cat("Ninguna de las variables seleccionadas está presente en el dataset.\n")
+}
+```
+
+Este análisis de las 9 variables categóricas seleccionadas manualmente ofrece una visión clara de la composición del dataset, revelando tanto patrones importantes como áreas que requieren atención en la limpieza de datos.
+
+Interpretación de los Gráficos Los resultados se pueden agrupar en cuatro categorías principales de hallazgos:
+
+1.  Fuerte Sesgo Geográfico y Demográfico 📍 Comunidad Autónoma: El hallazgo más impactante es el desequilibrio extremo en esta variable. La inmensa mayoría de los registros pertenecen a ANDALUCÍA, con una representación mínima de otras comunidades como LA RIOJA. Esto es crucial: cualquier conclusión extraída de este análisis será representativa de Andalucía, pero no puede generalizarse al resto de España.
+
+País Nacimiento: Se observa un patrón similar. El código "724" (que corresponde a España) es abrumadoramente dominante. El código "ZZZ" probablemente representa un valor desconocido o no especificado. Esto indica que el dataset se centra casi exclusivamente en pacientes nacidos en España.
+
+2.  Información Clínica Relevante 🩺 Diagnóstico Principal: Este gráfico es muy informativo. Muestra que los diagnósticos más frecuentes son códigos CIE-10 del capítulo de trastornos mentales y del comportamiento (códigos 'F'). Destacan el F20.9 (Esquizofrenia no especificada), F20.0 (Esquizofrenia paranoide) y F31.9 (Trastorno afectivo bipolar no especificado), dándonos una primera idea de las patologías más comunes en esta cohorte de pacientes.
+
+Procedimiento 1: Muestra los códigos de los procedimientos iniciales más comunes. El código GZZZZZZ es el más frecuente, lo cual en sistemas de codificación como ICD-10-PCS a menudo significa "Sin procedimiento" o un código genérico. Los otros códigos (B02ZZZZ, GZ14ZZZ, etc.) apuntan a intervenciones específicas que valdría la pena investigar.
+
+3.  Identificadores de Alta Cardinalidad 🆔 Nombre, Número de registro anual y Centro Recodificado: Estas variables se caracterizan por tener una alta cardinalidad, lo que significa que tienen muchos valores únicos. Como se ve en los gráficos, incluso las 10 categorías más frecuentes tienen una frecuencia muy baja. Esto es esperado, ya que son identificadores (de persona, de registro y de centro, respectivamente) y no variables categóricas para análisis de grupos. Su utilidad principal es identificar registros individuales, no para agregación.
+
+4.  Variables Temporales Mal Tipificadas 🗓️ Mes de Ingreso y Fecha de Fin Contacto: Ambas variables son de naturaleza temporal, pero están siendo tratadas como texto (character). El gráfico de Mes de Ingreso nos permite ver los meses con más admisiones (como 2017-03), pero para un análisis de tendencias adecuado, estas columnas deben ser convertidas a un formato de fecha/hora. Tratar cada fecha única como una categoría distinta, como en Fecha de Fin Contacto, no es analíticamente útil.
+
+Conclusión General El análisis de estas variables categóricas ha sido un éxito. Ha revelado la limitación geográfica clave del estudio (centrado en Andalucía), ha proporcionado un perfil clínico inicial de los pacientes, ha confirmado la naturaleza de las variables de identificación y ha señalado la necesidad crítica de corregir los tipos de datos de las variables de fecha.
+
+## Outliers (regla IQR)
+
+```{r}
+  outlier_stats <- numericas %>%
+    pivot_longer(everything(), names_to = "variable", values_to = "valor") %>%
+    group_by(variable) %>%
+    summarise(
+      q1 = quantile(valor, 0.25, na.rm = TRUE),
+      q3 = quantile(valor, 0.75, na.rm = TRUE),
+      iqr = q3 - q1,
+      lower = q1 - 1.5 * iqr,
+      upper = q3 + 1.5 * iqr,
+      n = sum(!is.na(valor)),
+      outliers = sum(valor < lower | valor > upper, na.rm = TRUE),
+      pct_out = round(100 * outliers / pmax(n, 1), 2)
+    ) %>% arrange(desc(pct_out))
+
+  outlier_stats
+
+  top_var <- outlier_stats$variable[1]
+  top_pct <- outlier_stats$pct_out[1]
+  cat("Mayor % de outliers en: ", top_var, " (", top_pct, "%)\n", sep = "") 
+```
+
+Interpretación del Análisis de Outliers La tabla identifica correctamente los valores que caen fuera del rango intercuartílico (IQR), pero es fundamental separar los resultados en dos grupos para una interpretación correcta.
+
+1.  Falsos Positivos: Outliers en Variables Categóricas ⚠️ La mayoría de las variables que encabezan la lista con el mayor porcentaje de outliers (Circunstancia de Contacto, Tipo Alta, GRD APR, Riesgo Mortalidad, etc.) son, como identificamos anteriormente, variables categóricas codificadas como números.
+
+¿Por qué ocurre esto? El método del IQR está diseñado para datos continuos. Cuando se aplica a datos categóricos con pocos valores (ej. 1 y 2), el rango intercuartílico (iqr) puede ser 0 o 1.
+
+En el caso de Circunstancia de Contacto, la mayoría de los valores son '1'. Esto hace que tanto el primer cuartil (q1) como el tercer cuartil (q3) sean '1', resultando en un iqr de 0. La fórmula entonces considera cualquier valor que no sea '1' (como el '2') como un outlier.
+
+Conclusión: Los 10.5% de "outliers" en Circunstancia de Contacto no son errores ni valores extremos, son simplemente las observaciones que pertenecen a la segunda categoría menos frecuente. Lo mismo ocurre con las otras variables de esta lista. Estos no son outliers que deban ser eliminados, sino una confirmación de que estas variables deben ser tratadas como factores.
+
+2.  Outliers Reales y Significativos ✅ En contraste, los outliers identificados en las variables verdaderamente cuantitativas son informativos y esperados.
+
+Estancia Días (5.8% outliers): Estos valores representan a los pacientes con estancias hospitalarias inusualmente largas. Son datos muy valiosos que podrían indicar casos más complejos, complicaciones o perfiles de pacientes específicos. No deben ser eliminados a la ligera, sino estudiados en detalle.
+
+Coste APR (0.9% outliers) y Peso Español APR (0.8% outliers): Estos son los casos de alto coste. Como vimos en los histogramas, la distribución de costes está muy sesgada. Estos outliers representan los tratamientos más caros y son de gran interés para el análisis de gestión y eficiencia.
+
+Edad y Edad en Ingreso (0.7% outliers): Corresponden a los pacientes muy jóvenes o muy mayores en comparación con el grueso de la población del dataset.
+
+Resumen General El análisis de outliers ha sido extremadamente útil, no tanto para encontrar errores, sino para confirmar la naturaleza de nuestras variables.
+
+Ha reforzado la necesidad de convertir las variables categóricas a factores para evitar interpretaciones incorrectas.
+
+Ha validado la presencia de valores extremos significativos en las métricas clave como Estancia Días y Coste APR, los cuales son el foco de muchos análisis clínicos y económicos.
