@@ -83,11 +83,21 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
       {/* Category distribution bar chart */}
       <div className="chart-card">
         <h3 className="chart-title">Distribución por categoría diagnóstica</h3>
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={data.categories} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+        <ResponsiveContainer width="100%" height={500}>
+          <BarChart 
+            data={data.categories} 
+            layout="vertical"
+            margin={{ top: 20, right: 30, left: 280, bottom: 20 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
-            <XAxis dataKey="category" angle={-45} textAnchor="end" stroke={COLORS.text} />
-            <YAxis stroke={COLORS.text} />
+            <XAxis type="number" stroke={COLORS.text} />
+            <YAxis 
+              type="category" 
+              dataKey="category" 
+              stroke={COLORS.text}
+              width={260}
+              style={{ fontSize: '13px' }}
+            />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
             <Bar dataKey="count" fill={COLORS.primary} name="Admisiones" />
