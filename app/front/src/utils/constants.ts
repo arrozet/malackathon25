@@ -17,6 +17,7 @@ export const NAV_ITEMS = [
 /**
  * Brain color palette matching the design system.
  * Based on purple theme with dark background (#0D0C1D).
+ * All text colors ensure WCAG AA compliance (4.5:1 minimum contrast ratio).
  */
 export const COLORS = {
   /** Primary purple for main actions and brand (#7C3AED) */
@@ -35,12 +36,12 @@ export const COLORS = {
   danger: '#F87171',
   /** Background dark (#0D0C1D) */
   background: '#0D0C1D',
-  /** Text off-white (#E5E7EB) */
-  text: '#E5E7EB',
+  /** Text off-white - WCAG AA compliant (#F3F4F6, contrast ratio > 14:1) */
+  text: '#F3F4F6',
   /** Border gray (#374151) */
   border: '#374151',
-  /** Secondary content gray (#4B5563) */
-  muted: '#4B5563',
+  /** Secondary content gray - WCAG AA compliant (#D1D5DB, contrast ratio > 9:1) */
+  muted: '#D1D5DB',
 } as const
 
 /**

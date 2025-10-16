@@ -6,7 +6,7 @@ multiple microservices through a unified interface. It handles application
 lifecycle, CORS configuration, and routes requests to appropriate services.
 """
 
-from typing import Dict
+from typing import Dict, Any
 from contextlib import asynccontextmanager
 import logging
 
@@ -21,7 +21,7 @@ from app.back.db import (
 )
 
 # Import routers for microservices
-from app.back.routers import insights, visualization, health, categories
+from app.back.routers import insights, visualization, health, categories, ai
 
 # Configure logging
 logging.basicConfig(
@@ -56,10 +56,12 @@ async def lifespan(app: FastAPI):
     
     try:
         # Initialize database connection pool
+        # Configured for multi-agent AI workloads + concurrent frontend requests
         initialize_connection_pool(
-            min_connections=2,
-            max_connections=10,
-            increment=2
+            min_connections=5,
+            max_connections=50,  # Oracle ADB supports 25-100+ connections
+            increment=5,
+            timeout=30  # Wait up to 30s if pool exhausted
         )
         logger.info("Database connection pool initialized successfully")
     except Exception as e:
@@ -103,12 +105,13 @@ app.include_router(health.router)
 app.include_router(insights.router)
 app.include_router(visualization.router)
 app.include_router(categories.router)
+app.include_router(ai.router)
 
 logger.info("Microservice routers registered successfully")
 
 
 @app.get("/")
-async def root() -> Dict[str, str]:
+async def root() -> Dict[str, Any]:
     """
     Root endpoint for API Gateway.
     
@@ -128,6 +131,7 @@ async def root() -> Dict[str, str]:
             "insights - Analytical insights generation",
             "visualization - Data visualization and filtering",
             "categories - Diagnostic category management",
+            "ai - AI Assistant (Brain) with Oracle RAG, internet search, code execution, and diagrams",
         ]
     }
 

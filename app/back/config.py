@@ -80,6 +80,10 @@ class Config:
         "http://localhost:5173,http://127.0.0.1:5173,http://158.179.212.221,http://158.179.212.221:80,http://158.179.212.221:3000",
     )
     
+    # AI Service Configuration
+    XAI_API_KEY: str = os.getenv("XAI_API_KEY", "")
+    TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
+    
     @classmethod
     def validate(cls) -> None:
         """
@@ -130,6 +134,8 @@ class Config:
             "APP_ENV": cls.APP_ENV,
             "DEBUG": cls.DEBUG,
             "CORS_ORIGINS": cls.CORS_ORIGINS,
+            "XAI_API_KEY": "***" if cls.XAI_API_KEY else "NOT SET",
+            "TAVILY_API_KEY": "***" if cls.TAVILY_API_KEY else "NOT SET",
         }
 
     @classmethod

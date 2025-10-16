@@ -21,9 +21,11 @@ _connection_pool: Optional[oracledb.ConnectionPool] = None
 
 
 def initialize_connection_pool(
-    min_connections: int = 1,
-    max_connections: int = 10,
-    increment: int = 1
+    min_connections: int = 5,
+    max_connections: int = 50,
+    increment: int = 5,
+    timeout: int = 30,
+    getmode: int = oracledb.POOL_GETMODE_TIMEDWAIT
 ) -> None:
     """
     Initializes the Oracle database connection pool.
@@ -32,9 +34,11 @@ def initialize_connection_pool(
     It uses the wallet configuration for secure connection to Oracle Cloud.
     
     Args:
-        min_connections (int): Minimum number of connections in the pool. Default is 1.
-        max_connections (int): Maximum number of connections in the pool. Default is 10.
-        increment (int): Number of connections to create when pool needs to grow. Default is 1.
+        min_connections (int): Minimum number of connections in the pool. Default is 5.
+        max_connections (int): Maximum number of connections in the pool. Default is 50.
+        increment (int): Number of connections to create when pool needs to grow. Default is 5.
+        timeout (int): Timeout in seconds when waiting for a connection. Default is 30.
+        getmode (int): Mode for acquiring connections from pool. Default is TIMEDWAIT.
     
     Raises:
         oracledb.Error: If connection pool creation fails.
@@ -42,6 +46,10 @@ def initialize_connection_pool(
     
     Side Effects:
         Creates a global connection pool stored in _connection_pool.
+    
+    Notes:
+        Oracle ADB supports 25-100+ concurrent connections depending on tier.
+        Pool configured for multi-agent AI workloads with concurrent frontend requests.
     """
     global _connection_pool
     
@@ -68,6 +76,8 @@ def initialize_connection_pool(
             min=min_connections,
             max=max_connections,
             increment=increment,
+            getmode=getmode,  # TIMEDWAIT: wait for connection with timeout
+            timeout=timeout,  # Timeout in seconds when pool is exhausted
             config_dir=config.TNS_ADMIN,  # Path to wallet directory
             wallet_location=config.TNS_ADMIN,  # Same as config_dir for wallet
             wallet_password=config.ORACLE_WALLET_PASSWORD,  # Wallet encryption password
@@ -75,7 +85,8 @@ def initialize_connection_pool(
         
         logger.info(
             f"Connection pool created successfully: "
-            f"min={min_connections}, max={max_connections}, increment={increment}"
+            f"min={min_connections}, max={max_connections}, increment={increment}, "
+            f"timeout={timeout}s, getmode={'TIMEDWAIT' if getmode == oracledb.POOL_GETMODE_TIMEDWAIT else 'NOWAIT'}"
         )
         
         # Test the connection
@@ -144,12 +155,13 @@ def get_connection():
     
     connection = None
     try:
-        # Acquire connection from pool
+        # Acquire connection from pool (will wait up to timeout seconds if pool exhausted)
         connection = _connection_pool.acquire()
-        logger.debug("Connection acquired from pool")
+        logger.debug(f"Connection acquired from pool (busy: {_connection_pool.busy}, open: {_connection_pool.opened})")
         yield connection
     except oracledb.Error as e:
-        logger.error(f"Error acquiring connection: {str(e)}")
+        pool_stats = f"(busy: {_connection_pool.busy}/{_connection_pool.max})" if _connection_pool else ""
+        logger.error(f"Error acquiring connection {pool_stats}: {str(e)}")
         raise
     finally:
         # Always release connection back to pool
@@ -271,6 +283,41 @@ def execute_dml(query: str, params: Optional[dict] = None, commit: bool = True) 
         logger.error(f"Error executing DML: {str(e)}")
         logger.error(f"Query: {query}")
         raise
+
+
+def get_pool_stats() -> dict:
+    """
+    Gets real-time statistics about the connection pool.
+    
+    Returns:
+        dict: Pool statistics including busy/opened/max connections and utilization percentage.
+    """
+    if not _connection_pool:
+        return {
+            "status": "not_initialized",
+            "busy": 0,
+            "opened": 0,
+            "max": 0,
+            "min": 0,
+            "utilization_percent": 0
+        }
+    
+    busy = _connection_pool.busy
+    opened = _connection_pool.opened
+    max_conn = _connection_pool.max
+    min_conn = _connection_pool.min
+    
+    utilization = (busy / max_conn * 100) if max_conn > 0 else 0
+    
+    return {
+        "status": "active",
+        "busy": busy,
+        "opened": opened,
+        "max": max_conn,
+        "min": min_conn,
+        "utilization_percent": round(utilization, 2),
+        "warning": utilization > 80  # Warn if pool is >80% utilized
+    }
 
 
 def get_pool_status() -> dict:

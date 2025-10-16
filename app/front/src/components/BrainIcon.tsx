@@ -1,17 +1,35 @@
 /**
  * Renderiza un icono SVG de un cerebro inspirado en Font Awesome.
+ * 
+ * ACCESIBILIDAD: Componente con soporte para modo decorativo e informativo.
+ * - decorative=true: usa aria-hidden="true" (por defecto)
+ * - decorative=false: usa role="img" y aria-label
+ * 
  * @param className - Clase opcional para permitir ajustes de estilo externos.
+ * @param decorative - Si true, oculta el icono de lectores de pantalla (por defecto true).
+ * @param label - Descripción accesible cuando decorative=false.
  * @returns Elemento SVG listo para insertar en la interfaz.
+ * 
+ * REFERENCIA: WCAG 2.1 - 1.1.1 Non-text Content (Level A)
  */
-export default function BrainIcon({ className }: { className?: string }) {
+export default function BrainIcon({ 
+  className, 
+  decorative = true,
+  label = "Icono de cerebro con inteligencia artificial"
+}: { 
+  className?: string
+  decorative?: boolean
+  label?: string
+}) {
   // El icono utiliza un gradiente radial para alinearse con la identidad visual de Brain.
   return (
     <svg
       className={className}
-      role="img"
       viewBox="-40 0 720 640"
       preserveAspectRatio="xMidYMid meet"
-      aria-hidden="true"
+      aria-hidden={decorative ? "true" : undefined}
+      role={!decorative ? "img" : undefined}
+      aria-label={!decorative ? label : undefined}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>

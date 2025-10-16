@@ -42,36 +42,54 @@ export default function DataExplorer(): ReactElement {
   return (
     <div className="explorer-page">
       {/* Page header */}
-      <div className="explorer-header">
+      {/* 
+        ACCESIBILIDAD: <h1> como título principal de la página.
+        Cada vista debe tener un único h1 que identifique el contenido principal.
+        REFERENCIA: WCAG 2.1 - 2.4.6 Headings and Labels (Level AA)
+      */}
+      <header className="explorer-header">
         <h1>Exploración de datos</h1>
         <p className="explorer-subtitle">
           Filtra y visualiza los datos de admisiones de salud mental. Los gráficos se actualizan
           en tiempo real según los filtros aplicados.
         </p>
-      </div>
+      </header>
 
       {/* Main explorer layout */}
       <div className="explorer-layout">
-        {/* Filters sidebar */}
-        <aside className="explorer-sidebar">
+        {/* 
+          ACCESIBILIDAD: <aside> sin role redundante.
+          El elemento <aside> ya tiene semántica implícita de complementary.
+          REFERENCIA: WCAG 2.1 - 4.1.2 Name, Role, Value (Level A)
+        */}
+        <aside className="explorer-sidebar" aria-label="Panel de filtros de datos">
           <DataFilters filters={filters} onFiltersChange={handleFiltersChange} />
         </aside>
 
-        {/* Main content area with charts */}
-        <main className="explorer-content">
+        {/* 
+          ACCESIBILIDAD: Uso de <div> en lugar de <main>.
+          Solo debe haber un único <main> por página (definido en App.tsx).
+          REFERENCIA: HTML5 Spec - The main element
+        */}
+        <div className="explorer-content" aria-label="Área de visualización de datos">
           {/* Loading state */}
           {loading && (
-            <div className="status-message">
-              <div className="spinner" />
+            <div className="status-message" role="status" aria-live="polite" aria-busy="true">
+              <div className="spinner" aria-hidden="true" />
               <p>Cargando datos de visualización...</p>
             </div>
           )}
 
           {/* Error state with retry button */}
           {error && !loading && (
-            <div className="status-message status--error">
+            <div className="status-message status--error" role="alert" aria-live="assertive">
               <p>{error}</p>
-              <button type="button" className="btn-retry" onClick={refetch}>
+              <button 
+                type="button" 
+                className="btn-retry" 
+                onClick={refetch}
+                aria-label="Reintentar carga de datos"
+              >
                 Reintentar
               </button>
             </div>
@@ -81,7 +99,7 @@ export default function DataExplorer(): ReactElement {
           {data && !loading && !error && (
             <>
               {data.total_records === 0 ? (
-                <div className="status-message status--warning">
+                <div className="status-message status--warning" role="status" aria-live="polite">
                   <p>No se encontraron registros con los filtros aplicados.</p>
                   <p className="hint">
                     Intenta ajustar o limpiar los filtros para ver más datos.
@@ -92,7 +110,7 @@ export default function DataExplorer(): ReactElement {
               )}
             </>
           )}
-        </main>
+        </div>
       </div>
     </div>
   )
