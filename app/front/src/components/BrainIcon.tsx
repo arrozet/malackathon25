@@ -8,7 +8,6 @@ export default function BrainIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      role="img"
       viewBox="-40 0 720 640"
       preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
