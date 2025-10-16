@@ -111,3 +111,4 @@ vignettes/*.pdf
 /*_files/
 data/R/SaludMental.xls
 data/R/R.Rproj
+*.xlsx
