@@ -49,11 +49,11 @@ jobs:
             git fetch origin
             git reset --hard origin/main
             
-            echo "🔧 Ejecutando script de deploy..."
-            chmod +x deploy.sh
+            echo "🔧 Ejecutando script de deploy automático..."
+            chmod +x deploy_auto.sh
             
-            # Ejecutar deploy (pasando el email de certbot)
-            ./deploy.sh $CERTBOT_EMAIL
+            # Ejecutar deploy automático (pasando el email de certbot)
+            ./deploy_auto.sh $CERTBOT_EMAIL
             
             echo "✅ Deploy completado exitosamente"
           ENDSSH

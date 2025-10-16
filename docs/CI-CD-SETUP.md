@@ -15,8 +15,12 @@ El proyecto utiliza **GitHub Actions** para automatizar el despliegue en Oracle 
 **Jobs:**
 1. **Checkout:** Descarga el código del repositorio
 2. **Setup SSH:** Configura las credenciales SSH para conectar a Oracle VM
-3. **Deploy:** Se conecta por SSH, actualiza el código y ejecuta `deploy.sh`
+3. **Deploy:** Se conecta por SSH, actualiza el código y ejecuta `deploy_auto.sh`
 4. **Health Check:** Verifica que la aplicación responde correctamente tras el despliegue
+
+**Scripts de Deploy:**
+- `deploy.sh` - Versión interactiva para deploy manual (requiere confirmación del usuario)
+- `deploy_auto.sh` - Versión automática para CI/CD (sin interacción, usado por GitHub Actions)
 
 ---
 

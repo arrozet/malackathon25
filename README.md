@@ -291,8 +291,12 @@ Este proyecto utiliza **GitHub Actions** para despliegue automático en Oracle C
 Cada push a la rama `main` ejecuta automáticamente:
 1. ✅ Conexión SSH a la VM de Oracle Cloud
 2. ✅ Pull del código más reciente
-3. ✅ Ejecución del script `deploy.sh`
+3. ✅ Ejecución del script `deploy_auto.sh` (versión no interactiva)
 4. ✅ Health check post-despliegue
+
+**Scripts disponibles:**
+- `deploy.sh` - Deploy manual con confirmaciones (para DevOps Engineer)
+- `deploy_auto.sh` - Deploy automático sin interacción (usado por CI/CD)
 
 ### Configuración
 Para habilitar el CI/CD, configura los siguientes secrets en GitHub:

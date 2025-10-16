@@ -43,7 +43,7 @@ nano .env
 # Agregar: ORACLE_USER, ORACLE_PASSWORD, ORACLE_DSN
 
 # Dar permisos
-chmod +x deploy.sh
+chmod +x deploy.sh deploy_auto.sh
 chmod 600 .env
 ```
 
