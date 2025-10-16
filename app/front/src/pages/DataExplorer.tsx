@@ -43,7 +43,7 @@ export default function DataExplorer(): ReactElement {
     <div className="explorer-page">
       {/* Page header */}
       <div className="explorer-header">
-        <h1>Exploración de datos</h1>
+        <h2>Exploración de datos</h2>
         <p className="explorer-subtitle">
           Filtra y visualiza los datos de admisiones de salud mental. Los gráficos se actualizan
           en tiempo real según los filtros aplicados.

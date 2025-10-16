@@ -117,7 +117,7 @@ function App(): ReactElement {
                   aria-labelledby={`section-${section.title}`}
                 >
                   <div className="card__header">
-                    <h3 id={`section-${section.title}`}>{section.title}</h3>
+                    <h2 id={`section-${section.title}`}>{section.title}</h2>
                     <span className="card__period">{insights.sample_period}</span>
                   </div>
                   <ul className="card__metric-list">

@@ -62,108 +62,130 @@ export default function DataFilters({ onFiltersChange, filters }: DataFiltersPro
     <div className="filters-panel">
       <div className="filters-header">
         <h3>Filtros de datos</h3>
-        <button type="button" className="btn-reset" onClick={handleReset}>
+        <button type="button" className="btn-reset" onClick={handleReset} aria-label="Limpiar todos los filtros">
           Limpiar filtros
         </button>
       </div>
 
-      <div className="filter-group">
-        <label htmlFor="filter-start-date">Fecha inicio</label>
-        <input
-          id="filter-start-date"
-          type="date"
-          className="filter-input"
-          value={filters.start_date || ''}
-          onChange={(e) => handleFilterChange('start_date', e.target.value || undefined)}
-        />
-      </div>
+      <form>
+        <fieldset>
+          <legend className="sr-only">Rango de fechas</legend>
+          <div className="filter-group">
+            <label htmlFor="filter-start-date">Fecha inicio</label>
+            <input
+              id="filter-start-date"
+              type="date"
+              className="filter-input"
+              value={filters.start_date || ''}
+              onChange={(e) => handleFilterChange('start_date', e.target.value || undefined)}
+              aria-describedby="filter-date-help"
+            />
+          </div>
 
-      <div className="filter-group">
-        <label htmlFor="filter-end-date">Fecha fin</label>
-        <input
-          id="filter-end-date"
-          type="date"
-          className="filter-input"
-          value={filters.end_date || ''}
-          onChange={(e) => handleFilterChange('end_date', e.target.value || undefined)}
-        />
-      </div>
+          <div className="filter-group">
+            <label htmlFor="filter-end-date">Fecha fin</label>
+            <input
+              id="filter-end-date"
+              type="date"
+              className="filter-input"
+              value={filters.end_date || ''}
+              onChange={(e) => handleFilterChange('end_date', e.target.value || undefined)}
+              aria-describedby="filter-date-help"
+            />
+          </div>
+          <p id="filter-date-help" className="sr-only">
+            Seleccione un rango de fechas para filtrar las admisiones
+          </p>
+        </fieldset>
 
-      <div className="filter-group">
-        <label htmlFor="filter-gender">Género</label>
-        <select
-          id="filter-gender"
-          className="filter-input"
-          value={filters.gender?.toString() || ''}
-          onChange={(e) => handleFilterChange('gender', e.target.value ? parseInt(e.target.value) : undefined)}
-        >
-          <option value="">Todos</option>
-          <option value="1">Hombre</option>
-          <option value="2">Mujer</option>
-        </select>
-      </div>
+        <fieldset>
+          <legend className="sr-only">Características demográficas</legend>
+          <div className="filter-group">
+            <label htmlFor="filter-gender">Género</label>
+            <select
+              id="filter-gender"
+              className="filter-input"
+              value={filters.gender?.toString() || ''}
+              onChange={(e) => handleFilterChange('gender', e.target.value ? parseInt(e.target.value) : undefined)}
+            >
+              <option value="">Todos</option>
+              <option value="1">Hombre</option>
+              <option value="2">Mujer</option>
+            </select>
+          </div>
 
-      <div className="filter-group">
-        <label htmlFor="filter-age-min">Edad mínima</label>
-        <input
-          id="filter-age-min"
-          type="number"
-          className="filter-input"
-          placeholder="Edad mínima"
-          value={filters.age_min || ''}
-          onChange={(e) => handleFilterChange('age_min', e.target.value ? parseInt(e.target.value) : undefined)}
-          min="0"
-          max="120"
-        />
-      </div>
+          <div className="filter-group">
+            <label htmlFor="filter-age-min">Edad mínima</label>
+            <input
+              id="filter-age-min"
+              type="number"
+              className="filter-input"
+              placeholder="Edad mínima"
+              value={filters.age_min || ''}
+              onChange={(e) => handleFilterChange('age_min', e.target.value ? parseInt(e.target.value) : undefined)}
+              min="0"
+              max="120"
+              aria-describedby="filter-age-help"
+            />
+          </div>
 
-      <div className="filter-group">
-        <label htmlFor="filter-age-max">Edad máxima</label>
-        <input
-          id="filter-age-max"
-          type="number"
-          className="filter-input"
-          placeholder="Edad máxima"
-          value={filters.age_max || ''}
-          onChange={(e) => handleFilterChange('age_max', e.target.value ? parseInt(e.target.value) : undefined)}
-          min="0"
-          max="120"
-        />
-      </div>
+          <div className="filter-group">
+            <label htmlFor="filter-age-max">Edad máxima</label>
+            <input
+              id="filter-age-max"
+              type="number"
+              className="filter-input"
+              placeholder="Edad máxima"
+              value={filters.age_max || ''}
+              onChange={(e) => handleFilterChange('age_max', e.target.value ? parseInt(e.target.value) : undefined)}
+              min="0"
+              max="120"
+              aria-describedby="filter-age-help"
+            />
+          </div>
+          <p id="filter-age-help" className="sr-only">
+            Especifique un rango de edad entre 0 y 120 años
+          </p>
+        </fieldset>
 
-      <div className="filter-group">
-        <label htmlFor="filter-category">Categoría diagnóstica</label>
-        <select
-          id="filter-category"
-          className="filter-input"
-          value={filters.category || ''}
-          onChange={(e) => handleFilterChange('category', e.target.value || undefined)}
-          disabled={loadingCategories}
-        >
-          <option value="">Todas las categorías</option>
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-      </div>
+        <fieldset>
+          <legend className="sr-only">Características clínicas</legend>
+          <div className="filter-group">
+            <label htmlFor="filter-category">Categoría diagnóstica</label>
+            <select
+              id="filter-category"
+              className="filter-input"
+              value={filters.category || ''}
+              onChange={(e) => handleFilterChange('category', e.target.value || undefined)}
+              disabled={loadingCategories}
+              aria-busy={loadingCategories}
+            >
+              <option value="">Todas las categorías</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <div className="filter-group">
-        <label htmlFor="filter-readmission">Estado de reingreso</label>
-        <select
-          id="filter-readmission"
-          className="filter-input"
-          value={filters.readmission === undefined ? '' : filters.readmission.toString()}
-          onChange={(e) =>
-            handleFilterChange('readmission', e.target.value === '' ? undefined : e.target.value === 'true')
-          }
-        >
-          <option value="">Todos</option>
-          <option value="true">Solo reingresos</option>
-          <option value="false">Sin reingreso</option>
-        </select>
-      </div>
+          <div className="filter-group">
+            <label htmlFor="filter-readmission">Estado de reingreso</label>
+            <select
+              id="filter-readmission"
+              className="filter-input"
+              value={filters.readmission === undefined ? '' : filters.readmission.toString()}
+              onChange={(e) =>
+                handleFilterChange('readmission', e.target.value === '' ? undefined : e.target.value === 'true')
+              }
+            >
+              <option value="">Todos</option>
+              <option value="true">Solo reingresos</option>
+              <option value="false">Sin reingreso</option>
+            </select>
+          </div>
+        </fieldset>
+      </form>
     </div>
   )
 }

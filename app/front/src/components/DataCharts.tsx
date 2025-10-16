@@ -103,7 +103,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
 
       {/* Category distribution bar chart */}
       <div className="chart-card">
-        <h3 className="chart-title">Distribución por categoría diagnóstica</h3>
+        <h4 className="chart-title">Distribución por categoría diagnóstica</h4>
         <ResponsiveContainer width="100%" height={isMobile ? 600 : 500}>
           <BarChart 
             data={data.categories} 
@@ -132,7 +132,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
 
       {/* Time series line chart */}
       <div className="chart-card">
-        <h3 className="chart-title">Evolución temporal de admisiones</h3>
+        <h4 className="chart-title">Evolución temporal de admisiones</h4>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart
             data={data.time_series}
@@ -156,7 +156,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
 
       {/* Gender distribution pie chart */}
       <div className="chart-card">
-        <h3 className="chart-title">Distribución por género</h3>
+        <h4 className="chart-title">Distribución por género</h4>
         <ResponsiveContainer width="100%" height={400}>
           <PieChart>
             <Pie
@@ -182,7 +182,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
 
       {/* Age distribution bar chart */}
       <div className="chart-card">
-        <h3 className="chart-title">Distribución por grupos de edad</h3>
+        <h4 className="chart-title">Distribución por grupos de edad</h4>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={data.age_groups} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
@@ -197,7 +197,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
 
       {/* Stay distribution bar chart */}
       <div className="chart-card">
-        <h3 className="chart-title">Distribución de duración de estancia</h3>
+        <h4 className="chart-title">Distribución de duración de estancia</h4>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart
             data={data.stay_distribution}

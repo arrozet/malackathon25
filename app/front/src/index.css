@@ -25,6 +25,19 @@ a {
   color: inherit;
 }
 
+/* Accessibility utility - Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* Global focus styles for keyboard navigation */
 *:focus-visible {
   outline: 2px solid #7c3aed;
@@ -55,7 +68,8 @@ select:focus-visible {
   margin-bottom: 2rem;
 }
 
-.explorer-header h1 {
+.explorer-header h1,
+.explorer-header h2 {
   font-size: 2rem;
   font-weight: 700;
   color: #e5e7eb;
@@ -90,6 +104,30 @@ select:focus-visible {
   border: 1px solid #374151;
   border-radius: 12px;
   padding: 1.5rem;
+}
+
+.filters-panel form {
+  all: unset;
+  display: block;
+  width: 100%;
+}
+
+.filters-panel fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+}
+
+.filters-panel fieldset:last-child {
+  margin-bottom: 0;
+}
+
+.filters-panel legend {
+  padding: 0;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #a855f7;
 }
 
 .filters-header {
@@ -339,7 +377,8 @@ select:focus-visible {
     padding: 1rem;
   }
 
-  .explorer-header h1 {
+  .explorer-header h1,
+  .explorer-header h2 {
     font-size: 1.5rem;
   }
 
