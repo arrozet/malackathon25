@@ -53,25 +53,30 @@ export default function DataExplorer(): ReactElement {
       {/* Main explorer layout */}
       <div className="explorer-layout">
         {/* Filters sidebar */}
-        <aside className="explorer-sidebar">
+        <aside className="explorer-sidebar" role="complementary" aria-label="Panel de filtros de datos">
           <DataFilters filters={filters} onFiltersChange={handleFiltersChange} />
         </aside>
 
         {/* Main content area with charts */}
-        <main className="explorer-content">
+        <main className="explorer-content" aria-label="Área de visualización de datos">
           {/* Loading state */}
           {loading && (
-            <div className="status-message">
-              <div className="spinner" />
+            <div className="status-message" role="status" aria-live="polite" aria-busy="true">
+              <div className="spinner" aria-hidden="true" />
               <p>Cargando datos de visualización...</p>
             </div>
           )}
 
           {/* Error state with retry button */}
           {error && !loading && (
-            <div className="status-message status--error">
+            <div className="status-message status--error" role="alert" aria-live="assertive">
               <p>{error}</p>
-              <button type="button" className="btn-retry" onClick={refetch}>
+              <button 
+                type="button" 
+                className="btn-retry" 
+                onClick={refetch}
+                aria-label="Reintentar carga de datos"
+              >
                 Reintentar
               </button>
             </div>
@@ -81,7 +86,7 @@ export default function DataExplorer(): ReactElement {
           {data && !loading && !error && (
             <>
               {data.total_records === 0 ? (
-                <div className="status-message status--warning">
+                <div className="status-message status--warning" role="status" aria-live="polite">
                   <p>No se encontraron registros con los filtros aplicados.</p>
                   <p className="hint">
                     Intenta ajustar o limpiar los filtros para ver más datos.

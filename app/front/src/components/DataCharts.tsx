@@ -76,7 +76,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
     const { active, payload, label } = props
     if (active && payload && payload.length) {
       return (
-        <div className="chart-tooltip">
+        <div className="chart-tooltip" role="tooltip" aria-live="polite">
           <p className="tooltip-label">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="tooltip-value" style={{ color: entry.color }}>
@@ -92,19 +92,21 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
   }
 
   return (
-    <div className="charts-container">
+    <div className="charts-container" role="region" aria-label="Visualizaciones de datos de admisiones">
       {/* Summary statistics */}
-      <div className="chart-summary">
+      <div className="chart-summary" role="status" aria-live="polite">
         <div className="summary-card">
           <span className="summary-label">Total de registros</span>
-          <span className="summary-value">{formatNumber(data.total_records)}</span>
+          <span className="summary-value" aria-label={`${formatNumber(data.total_records)} registros en total`}>
+            {formatNumber(data.total_records)}
+          </span>
         </div>
       </div>
 
       {/* Category distribution bar chart */}
-      <div className="chart-card">
-        <h4 className="chart-title">Distribución por categoría diagnóstica</h4>
-        <ResponsiveContainer width="100%" height={isMobile ? 600 : 500}>
+      <div className="chart-card" role="img" aria-label={`Gráfico de barras mostrando distribución de admisiones por categoría diagnóstica. Total de ${data.categories.length} categorías representadas.`}>
+        <h4 className="chart-title" id="chart-categories-title">Distribución por categoría diagnóstica</h4>
+        <ResponsiveContainer width="100%" height={isMobile ? 600 : 500} aria-labelledby="chart-categories-title">
           <BarChart 
             data={data.categories} 
             layout="vertical"
@@ -131,9 +133,9 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
       </div>
 
       {/* Time series line chart */}
-      <div className="chart-card">
-        <h4 className="chart-title">Evolución temporal de admisiones</h4>
-        <ResponsiveContainer width="100%" height={400}>
+      <div className="chart-card" role="img" aria-label={`Gráfico de líneas mostrando la evolución temporal de admisiones. Presenta ${data.time_series.length} períodos de tiempo.`}>
+        <h4 className="chart-title" id="chart-timeseries-title">Evolución temporal de admisiones</h4>
+        <ResponsiveContainer width="100%" height={400} aria-labelledby="chart-timeseries-title">
           <LineChart
             data={data.time_series}
             margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
@@ -155,9 +157,9 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
       </div>
 
       {/* Gender distribution pie chart */}
-      <div className="chart-card">
-        <h4 className="chart-title">Distribución por género</h4>
-        <ResponsiveContainer width="100%" height={400}>
+      <div className="chart-card" role="img" aria-label={`Gráfico circular mostrando distribución por género. ${data.gender_distribution.map(g => `${g.gender}: ${g.percentage.toFixed(1)}%`).join(', ')}`}>
+        <h4 className="chart-title" id="chart-gender-title">Distribución por género</h4>
+        <ResponsiveContainer width="100%" height={400} aria-labelledby="chart-gender-title">
           <PieChart>
             <Pie
               data={data.gender_distribution as any[]}
@@ -181,9 +183,9 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
       </div>
 
       {/* Age distribution bar chart */}
-      <div className="chart-card">
-        <h4 className="chart-title">Distribución por grupos de edad</h4>
-        <ResponsiveContainer width="100%" height={400}>
+      <div className="chart-card" role="img" aria-label={`Gráfico de barras mostrando distribución por grupos de edad. Total de ${data.age_groups.length} grupos etarios.`}>
+        <h4 className="chart-title" id="chart-age-title">Distribución por grupos de edad</h4>
+        <ResponsiveContainer width="100%" height={400} aria-labelledby="chart-age-title">
           <BarChart data={data.age_groups} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
             <XAxis dataKey="age_group" stroke={COLORS.text} />
@@ -196,9 +198,9 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
       </div>
 
       {/* Stay distribution bar chart */}
-      <div className="chart-card">
-        <h4 className="chart-title">Distribución de duración de estancia</h4>
-        <ResponsiveContainer width="100%" height={400}>
+      <div className="chart-card" role="img" aria-label={`Gráfico de barras mostrando distribución de duración de estancia hospitalaria. Total de ${data.stay_distribution.length} rangos de duración.`}>
+        <h4 className="chart-title" id="chart-stay-title">Distribución de duración de estancia</h4>
+        <ResponsiveContainer width="100%" height={400} aria-labelledby="chart-stay-title">
           <BarChart
             data={data.stay_distribution}
             margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
