@@ -12,6 +12,93 @@ Your main priorities are correctness and efficiency. The code you generate must 
 - **DevOps milestone:** Containerise services with Docker, orchestrate local development parity, and implement CI/CD pipelines that run tests, build artefacts, and trigger automated deployments.
 - Document repository URLs, deployment endpoints, credentials (if any), and evaluation instructions for judges.
 
+## Advanced Awards & Strategic Priorities
+
+Beyond baseline milestones, the hackathon offers **five advanced awards** that recognise excellence in specific dimensions. Each award should inform design decisions and implementation priorities:
+
+### Award 1 - Communication and Feature Integration
+**Criteria:** Clean architecture, data analysis, data visualization.
+
+**Strategic Focus:**
+- Enforce strict separation of concerns across frontend (Clean Architecture) and backend (Microservices) layers.
+- Ensure data analysis workflows are modular, reusable, and traceable from raw data to insights.
+- Deliver polished, interactive visualisations that communicate findings clearly to non-technical stakeholders.
+- Demonstrate seamless integration between exploration, analysis, and presentation layers.
+
+**Implementation Checkpoints:**
+- Custom hooks encapsulate all business logic; components remain purely presentational.
+- API services abstract HTTP communication; routers delegate to independent microservices.
+- Data visualisations use accessible libraries (e.g., Chart.js, D3.js) with responsive design and clear labelling.
+- EDA outputs (PDF reports) align with web app insights and share consistent analytical narratives.
+
+### Award 2 - Use and Integration of Artificial Intelligence
+**Criteria:** Relevant data selection, prompt construction quality, AI response quality, information presentation.
+
+**Strategic Focus:**
+- Identify and curate high-signal features from the mental health dataset to feed AI models.
+- Craft precise, context-rich prompts that yield actionable insights (e.g., trend explanations, risk factor identification).
+- Validate AI-generated responses for accuracy, clinical relevance, and alignment with domain knowledge.
+- Present AI insights within the Brain web app using clear summaries, citations, and confidence indicators.
+
+**Implementation Checkpoints:**
+- Implement feature selection logic (statistical tests, domain heuristics) to filter noisy or irrelevant variables.
+- Design prompt templates with structured context (patient demographics, admission patterns, temporal trends).
+- Integrate AI endpoints (e.g., OpenAI API, Oracle AI services) with proper error handling and fallback strategies.
+- Display AI-generated insights alongside traditional analytics, highlighting sources and uncertainty bounds.
+
+### Award 3 - "Data and Trust" for Innovative and Secure Analysis
+**Criteria:** Dataset preparation and validation, initial exploration and analysis, analytical reasoning and process traceability, regulatory compliance and data protection, security and responsibility best practices, visual communication and results synthesis.
+
+**Strategic Focus:**
+- Establish rigorous data quality checks (missing values, outliers, consistency) before analysis.
+- Document exploration steps, statistical tests, and transformation logic for full reproducibility.
+- Maintain audit trails linking raw data → processed data → insights → decisions.
+- Comply with healthcare data governance (GDPR, HIPAA-equivalent) through anonymisation and access controls.
+- Apply security best practices (least privilege, encrypted connections, secret management).
+- Synthesise findings in visual formats that balance detail with clarity for diverse audiences.
+
+**Implementation Checkpoints:**
+- SQL scripts validate data integrity constraints; Python/R scripts log preprocessing steps with versioned outputs.
+- EDA reports include methodology sections explaining analytical choices and assumptions.
+- Database access logs track queries; application logs capture user interactions for accountability.
+- Anonymisation scripts substitute identifiers deterministically; original identifiers never leave secure environments.
+- Environment variables store secrets; Oracle Wallet secures database connections; HTTPS enforces transit encryption.
+- Dashboards combine charts, tables, and narrative text to tell coherent data stories.
+
+### Award 4 - Security and Privacy Measures in Data Handling
+**Criteria:** Anonymisation, privacy, confidentiality.
+
+**Strategic Focus:**
+- Anonymise patient identifiers using cryptographic hashing or deterministic substitution before exploratory analysis.
+- Enforce privacy controls at database (user permissions, views) and application (role-based access) layers.
+- Protect confidential data in transit (TLS/SSL) and at rest (encrypted storage, secure wallets).
+- Minimise data exposure by querying only necessary columns and aggregating sensitive attributes.
+
+**Implementation Checkpoints:**
+- ETL scripts replace patient IDs with anonymised tokens; original mappings stored separately with restricted access.
+- Database user `malackathon` has read-only access scoped to non-sensitive columns and aggregated views.
+- FastAPI endpoints validate requests; Oracle connections use wallet-based authentication over encrypted channels.
+- Logs redact sensitive fields; error messages avoid leaking schema details or query patterns.
+
+### Award 5 - Excellence in Usability and Accessibility
+**Criteria:** Alternative texts for visual elements, clear system messages, information order and hierarchy, contrast and readability, interaction and controls, feedback and recovery.
+
+**Strategic Focus:**
+- Provide descriptive alt text for charts, icons, and images to support screen readers.
+- Display informative, jargon-free messages for loading states, errors, and validation feedback.
+- Organise content with logical flow, prominent headings, and progressive disclosure to reduce cognitive load.
+- Ensure WCAG AA compliance for colour contrast (4.5:1 text, 3:1 UI components) and readable typography.
+- Design interactive controls (buttons, filters, inputs) with clear labels, keyboard navigation, and focus indicators.
+- Implement graceful error recovery with actionable suggestions and retry mechanisms.
+
+**Implementation Checkpoints:**
+- All `<img>` and chart elements include `alt` attributes; ARIA labels annotate interactive widgets.
+- Toast notifications or inline alerts communicate system state changes in plain language.
+- Page layouts follow F-pattern reading; critical actions appear above the fold; filters precede results.
+- Brain colour palette (`#7C3AED` on `#0D0C1D`, `#E5E7EB` text) meets contrast standards; fonts sized ≥16px for body text.
+- Tab order follows visual flow; focus rings visible on keyboard interaction; clickable areas ≥44×44px.
+- Error messages specify what went wrong and how to fix it; failed requests trigger automatic retries or manual reload prompts.
+
 ## Mission Alignment
 
 - Interpret every request through the lens of delivering a polished demo that showcases insights on mental health admissions.
