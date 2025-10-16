@@ -114,7 +114,8 @@ Los centros ya cuentan con un código recodificado; lo utilizamos directamente c
 centros_tbl <- datos_brutos %>%
   distinct(`Centro Recodificado`) %>%
   filter(!is.na(`Centro Recodificado`), `Centro Recodificado` != "") %>%
-  transmute(ID_Centro = sql_quote(`Centro Recodificado`)) %>%
+  transmute(ID_Centro = suppressWarnings(as.numeric(`Centro Recodificado`))) %>%
+  filter(!is.na(ID_Centro)) %>%
   arrange(ID_Centro)
 
 centros_tbl %>% slice_head(n = 10)
@@ -130,12 +131,13 @@ grd_apr_tbl <- datos_brutos %>%
   filter(!is.na(`GRD APR`), `GRD APR` != "") %>%
   distinct() %>%
   transmute(
-    ID_GRD_APR = sql_quote(`GRD APR`),
+    ID_GRD_APR = suppressWarnings(as.numeric(`GRD APR`)),
     CDM_APR = sql_quote(`CDM APR`),
     Nivel_Severidad_APR = sql_quote(`Nivel Severidad APR`),
     Riesgo_Mortalidad_APR = sql_quote(`Riesgo Mortalidad APR`),
     Tipo_GRD_APR = sql_quote(`Tipo GRD APR`)
   ) %>%
+  filter(!is.na(ID_GRD_APR)) %>%
   arrange(ID_GRD_APR)
 
 grd_apr_tbl %>% slice_head(n = 10)
@@ -231,9 +233,9 @@ Cada fila representa un episodio hospitalario. Se genera `ID_Ingreso` secuencial
 ingresos_tbl <- datos_brutos %>%
   mutate(
     ID_Ingreso = row_number(),
-    ID_Centro = sql_quote(`Centro Recodificado`),
-    ID_GRD_APR = sql_quote(`GRD APR`),
-    Numero_de_registro_anual = `Número de registro anual`,
+    ID_Centro = suppressWarnings(as.numeric(`Centro Recodificado`)),
+    ID_GRD_APR = suppressWarnings(as.numeric(`GRD APR`)),
+    Numero_de_registro_anual = round(suppressWarnings(as.numeric(`Número de registro anual`)), 2),
     Fecha_de_Inicio_contacto = case_when(
       !is.na(`Fecha Inicio Contacto Fecha`) & !is.na(`Fecha Inicio Contacto Hora`) & `Fecha Inicio Contacto Hora` != "" ~
         suppressWarnings(ymd_hm(paste(`Fecha Inicio Contacto Fecha`, `Fecha Inicio Contacto Hora`), tz = "UTC")),
@@ -243,29 +245,26 @@ ingresos_tbl <- datos_brutos %>%
   ) %>%
   transmute(
     ID_Ingreso,
-    UUID_Paciente = sql_quote(`UUID_Paciente`),
+    UUID_Paciente = `UUID_Paciente`,
     ID_Centro,
     ID_GRD_APR,
     Numero_de_registro_anual,
-    Fecha_de_Ingreso = sql_quote(format(as_date(`Fecha de Ingreso`), "%Y-%m-%d")),
-    Fecha_de_Fin_Contacto = sql_quote(format(as_date(`Fecha de Fin Contacto`), "%Y-%m-%d")),
-    Fecha_de_Inicio_contacto = sql_quote(format(Fecha_de_Inicio_contacto, "%Y-%m-%d %H:%M:%S")),
-    Circunstancia_de_Contacto = sql_quote(`Circunstancia de Contacto`),
-    Tipo_Alta = sql_quote(`Tipo Alta`),
+    Fecha_de_Ingreso = if_else(is.na(`Fecha de Ingreso`), NA_character_, format(as_date(`Fecha de Ingreso`), "%Y-%m-%d")),
+    Fecha_de_Fin_Contacto = if_else(is.na(`Fecha de Fin Contacto`), NA_character_, format(as_date(`Fecha de Fin Contacto`), "%Y-%m-%d")),
+    Fecha_de_Inicio_contacto = if_else(is.na(Fecha_de_Inicio_contacto), NA_character_, format(Fecha_de_Inicio_contacto, "%Y-%m-%d %H:%M:%S")),
+    Circunstancia_de_Contacto = suppressWarnings(as.numeric(`Circunstancia de Contacto`)),
+    Tipo_Alta = suppressWarnings(as.numeric(`Tipo Alta`)),
     Servicio = sql_quote(`Servicio`),
-    Regimen_Financiacion = sql_quote(`Régimen Financiación`),
-    Procedencia = sql_quote(`Procedencia`),
-    Continuidad_Asistencial = sql_quote(`Continuidad Asistencial`),
+    Regimen_Financiacion = round(suppressWarnings(as.numeric(`Régimen Financiación`)), 2),
+    Procedencia = round(suppressWarnings(as.numeric(`Procedencia`)), 2),
+    Continuidad_Asistencial = round(suppressWarnings(as.numeric(`Continuidad Asistencial`)), 2),
     Estancia_Dias = `Estancia Días`,
     Estancia_Dias_Acotada = `Estancia_Dias_Acotada`,
     Duracion_Episodio_Calculada = `Duracion_Episodio_Calculada`,
     Edad = `Edad`,
     Edad_en_Ingreso = `Edad en Ingreso`,
-    Mes_de_Ingreso = sql_quote(format(as_date(`Mes de Ingreso`), "%Y-%m-%d")),
-    Mes_Nombre_Ingreso = sql_quote(`Mes_Nombre_Ingreso`),
-    Dia_Semana_Ingreso = sql_quote(`Dia_Semana_Ingreso`),
-    Coste_APR = `Coste APR`,
-    Peso_Español_APR = `Peso Español APR`,
+    Coste_APR = round(suppressWarnings(as.numeric(`Coste APR`)), 2),
+    Peso_Español_APR = round(suppressWarnings(as.numeric(`Peso Español APR`)), 4),
     Ingreso_en_UCI = to_binary(`Ingreso en UCI`),
     Diagnosticos_totales = `Diagnosticos_totales`,
     Procedimientos_totales = `Procedimientos_totales`,
@@ -504,8 +503,9 @@ dim_centros <- datos %>%
   distinct(centro_recodificado) %>%
   filter(!is.na(centro_recodificado), centro_recodificado != "") %>%
   transmute(
-    ID_Centro = sql_quote(centro_recodificado)
+    ID_Centro = suppressWarnings(as.numeric(centro_recodificado))
   ) %>%
+  filter(!is.na(ID_Centro)) %>%
   arrange(ID_Centro)
 
 dim_centros
@@ -571,12 +571,13 @@ dim_grd_apr <- datos %>%
   distinct(grd_apr, cdm_apr, nivel_severidad_apr, riesgo_mortalidad_apr, tipo_grd_apr) %>%
   filter(!is.na(grd_apr)) %>%
   transmute(
-    ID_GRD_APR = grd_apr,
-    CDM_APR = cdm_apr,
-    Nivel_Severidad_APR = nivel_severidad_apr,
-    Riesgo_Mortalidad_APR = riesgo_mortalidad_apr,
-    Tipo_GRD_APR = tipo_grd_apr
+    ID_GRD_APR = suppressWarnings(as.numeric(grd_apr)),
+    CDM_APR = sql_quote(cdm_apr),
+    Nivel_Severidad_APR = sql_quote(nivel_severidad_apr),
+    Riesgo_Mortalidad_APR = sql_quote(riesgo_mortalidad_apr),
+    Tipo_GRD_APR = sql_quote(tipo_grd_apr)
   ) %>%
+  filter(!is.na(ID_GRD_APR)) %>%
   arrange(ID_GRD_APR)
 
 dim_grd_apr
@@ -620,34 +621,31 @@ fact_ingresos <- datos %>%
   transmute(
     ID_Ingreso,
     UUID_Paciente = uuid_paciente,
-    ID_Centro = centro_recodificado,
-    ID_GRD_APR = grd_apr,
-    Numero_de_registro_anual = numero_de_registro_anual,
-    Fecha_de_Ingreso = as_date(fecha_de_ingreso),
-    Fecha_de_Fin_Contacto = as_date(fecha_de_fin_contacto),
-    Fecha_de_Inicio_contacto = as_datetime(fecha_inicio_contacto_fecha),
-    Circunstancia_de_Contacto = circunstancia_de_contacto,
-    Tipo_Alta = tipo_alta,
-    Servicio = servicio,
-    Regimen_Financiacion = regimen_financiacion,
-    Procedencia = procedencia,
-    Continuidad_Asistencial = continuidad_asistencial,
+    ID_Centro = suppressWarnings(as.numeric(centro_recodificado)),
+    ID_GRD_APR = suppressWarnings(as.numeric(grd_apr)),
+    Numero_de_registro_anual = round(suppressWarnings(as.numeric(numero_de_registro_anual)), 2),
+    Fecha_de_Ingreso = if_else(is.na(fecha_de_ingreso), NA_character_, format(as_date(fecha_de_ingreso), "%Y-%m-%d")),
+    Fecha_de_Fin_Contacto = if_else(is.na(fecha_de_fin_contacto), NA_character_, format(as_date(fecha_de_fin_contacto), "%Y-%m-%d")),
+    Fecha_de_Inicio_contacto = if_else(is.na(fecha_inicio_contacto_fecha), NA_character_, format(as_datetime(fecha_inicio_contacto_fecha), "%Y-%m-%d %H:%M:%S")),
+    Circunstancia_de_Contacto = suppressWarnings(as.numeric(circunstancia_de_contacto)),
+    Tipo_Alta = suppressWarnings(as.numeric(tipo_alta)),
+    Servicio = sql_quote(servicio),
+    Regimen_Financiacion = round(suppressWarnings(as.numeric(regimen_financiacion)), 2),
+    Procedencia = round(suppressWarnings(as.numeric(procedencia)), 2),
+    Continuidad_Asistencial = round(suppressWarnings(as.numeric(continuidad_asistencial)), 2),
     Estancia_Dias = estancia_dias,
     Estancia_Dias_Acotada = estancia_dias_acotada,
     Duracion_Episodio_Calculada = duracion_episodio_calculada,
     Edad = edad,
     Edad_en_Ingreso = edad_en_ingreso,
-    Mes_de_Ingreso = mes_de_ingreso,
-    Mes_Nombre_Ingreso = mes_nombre_ingreso,
-    Dia_Semana_Ingreso = dia_semana_ingreso,
-    Coste_APR = coste_apr,
-    Peso_Español_APR = peso_espanol_apr,
-    Ingreso_en_UCI = ingreso_en_uci,
+    Coste_APR = round(suppressWarnings(as.numeric(coste_apr)), 2),
+    Peso_Español_APR = round(suppressWarnings(as.numeric(peso_espanol_apr)), 4),
+    Ingreso_en_UCI = to_binary(ingreso_en_uci),
     Diagnosticos_totales = diagnosticos_totales,
     Procedimientos_totales = procedimientos_totales,
-    Tiene_procedimiento = tiene_procedimiento,
-    Diagnostico_F = diagnostico_f,
-    Tiene_Comorbilidad = tiene_comorbilidad
+    Tiene_procedimiento = to_binary(tiene_procedimiento),
+    Diagnostico_F = to_binary(diagnostico_f),
+    Tiene_Comorbilidad = to_binary(tiene_comorbilidad)
   )
 
 fact_ingresos
@@ -737,16 +735,16 @@ Este recuento global valida que la cardinalidad de cada tabla es coherente con l
 ```{r}
 dir.create("./salidas", showWarnings = FALSE, recursive = TRUE)
 
-write_csv(dim_comunidades_autonomas, "./salidas/Comunidades_Autonomas.csv")
-write_csv(dim_paises, "./salidas/Paises.csv")
-write_csv(dim_centros, "./salidas/Centros.csv")
-write_csv(dim_diagnosticos, "./salidas/Diagnosticos.csv")
-write_csv(dim_procedimientos, "./salidas/Procedimientos.csv")
-write_csv(dim_grd_apr, "./salidas/GRD_APR.csv")
-write_csv(pacientes, "./salidas/Pacientes.csv")
-write_csv(fact_ingresos, "./salidas/Ingresos.csv")
-write_csv(ingreso_diagnosticos, "./salidas/Ingreso_Diagnosticos.csv")
-write_csv(ingreso_procedimientos, "./salidas/Ingreso_Procedimientos.csv")
+write_csv(dim_comunidades_autonomas, "./salidas/Comunidades_Autonomas.csv", na = "")
+write_csv(dim_paises, "./salidas/Paises.csv", na = "")
+write_csv(dim_centros, "./salidas/Centros.csv", na = "")
+write_csv(dim_diagnosticos, "./salidas/Diagnosticos.csv", na = "")
+write_csv(dim_procedimientos, "./salidas/Procedimientos.csv", na = "")
+write_csv(dim_grd_apr, "./salidas/GRD_APR.csv", na = "")
+write_csv(pacientes, "./salidas/Pacientes.csv", na = "")
+write_csv(fact_ingresos, "./salidas/Ingresos.csv", na = "")
+write_csv(ingreso_diagnosticos, "./salidas/Ingreso_Diagnosticos.csv", na = "")
+write_csv(ingreso_procedimientos, "./salidas/Ingreso_Procedimientos.csv", na = "")
 ```
 
 Persistimos cada tabla en formato CSV dentro de `salidas/`. Este formato es el esperado por `DBMS_CLOUD.COPY_DATA`, facilitando una ingesta directa en Oracle Autonomous Database sin transformaciones adicionales.
