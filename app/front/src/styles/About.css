@@ -40,6 +40,12 @@
   background: rgba(30, 28, 47, 0.6);
 }
 
+.back-link:focus {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+  background: rgba(30, 28, 47, 0.7);
+}
+
 /* Main content */
 .about-main {
   max-width: 900px;
@@ -142,6 +148,13 @@
 .about-link:hover {
   color: #c4b5fd;
   border-bottom-color: rgba(196, 181, 253, 0.5);
+}
+
+.about-link:focus {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+  border-radius: 2px;
+  background: rgba(124, 58, 237, 0.1);
 }
 
 /* Tech list */

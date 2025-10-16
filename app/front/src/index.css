@@ -25,6 +25,20 @@ a {
   color: inherit;
 }
 
+/* Global focus styles for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+}
+
 #root {
   min-height: 100vh;
 }
@@ -110,6 +124,12 @@ a {
   border-color: #a855f7;
 }
 
+.btn-reset:focus {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+  background: rgba(124, 58, 237, 0.15);
+}
+
 .filter-group {
   margin-bottom: 1.25rem;
 }
@@ -134,7 +154,8 @@ a {
 }
 
 .filter-input:focus {
-  outline: none;
+  outline: 2px solid #7c3aed;
+  outline-offset: 1px;
   border-color: #7c3aed;
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
@@ -290,6 +311,12 @@ a {
   background: #a855f7;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
+}
+
+.btn-retry:focus {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+  box-shadow: 0 4px 8px rgba(124, 58, 237, 0.5);
 }
 
 /* Responsive Design */
