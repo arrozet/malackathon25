@@ -283,13 +283,47 @@ async def mi_funcion():
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+## 🚀 CI/CD - Deploy Automático
+
+Este proyecto utiliza **GitHub Actions** para despliegue automático en Oracle Cloud.
+
+### Despliegue Automático
+Cada push a la rama `main` ejecuta automáticamente:
+1. ✅ Conexión SSH a la VM de Oracle Cloud
+2. ✅ Pull del código más reciente
+3. ✅ Ejecución del script `deploy.sh`
+4. ✅ Health check post-despliegue
+
+### Configuración
+Para habilitar el CI/CD, configura los siguientes secrets en GitHub:
+
+- `SSH_PRIVATE_KEY` - Clave privada SSH
+- `SSH_HOST` - IP de la VM Oracle
+- `SSH_USER` - Usuario SSH (ubuntu/opc)
+- `CERTBOT_EMAIL` - Email para Let's Encrypt
+- `DOMAIN` - Dominio de producción
+
+📖 **Guía completa de configuración:** [.github/DEPLOY_SETUP.md](.github/DEPLOY_SETUP.md)  
+📖 **Documentación detallada CI/CD:** [docs/CI-CD-SETUP.md](docs/CI-CD-SETUP.md)
+
+### Deploy Manual
+```bash
+# Ejecutar manualmente desde GitHub Actions
+GitHub → Actions → Deploy to Oracle Cloud → Run workflow
+
+# O desde la VM
+ssh ubuntu@<IP>
+cd ~/malackathon25
+./deploy.sh
+```
+
 ## 📝 TODO
 
 - [ ] Implementar autenticación y autorización
 - [ ] Añadir más endpoints de negocio
 - [ ] Implementar caché (Redis)
 - [ ] Añadir tests unitarios y de integración
-- [ ] Configurar CI/CD
+- [x] Configurar CI/CD ✅
 - [ ] Añadir monitoring y métricas (Prometheus)
 - [ ] Implementar rate limiting
 - [ ] Documentar APIs adicionales
