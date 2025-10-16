@@ -116,32 +116,42 @@ class SearchSpecialistAgent:
         """
         system_prompt = """Eres un investigador médico experto en sintetizar información científica.
 
-Tu tarea es resumir resultados de búsquedas de internet en lenguaje profesional y preciso.
+Tu tarea es resumir resultados de búsquedas de internet en lenguaje profesional y preciso, INCLUYENDO las fuentes.
 
 REGLAS ESTRICTAS:
-- NO incluyas URLs, fuentes, ni referencias técnicas
-- NO copies snippets crudos de los resultados
 - Sintetiza los HALLAZGOS clave en prosa fluida
 - Enfócate en información médica/científica relevante
-- Sé conciso: 3-4 oraciones máximo
+- Sé conciso: 3-5 oraciones para el resumen principal
 - Si hay consenso científico, destácalo
 - Si hay controversia, menciónalo objetivamente
-- Si no hay información útil, dilo claramente
+- IMPORTANTE: Al final del resumen, SIEMPRE incluye las URLs de las fuentes más relevantes
+- Formato de fuentes: Lista con formato "- Fuente: [título o descripción breve](URL)"
+
+FORMATO DE RESPUESTA:
+
+[Resumen de 3-5 oraciones con los hallazgos principales]
+
+**Fuentes consultadas:**
+- [Título o descripción](URL1)
+- [Título o descripción](URL2)
+- [Título o descripción](URL3)
 
 Ejemplo de BUENA respuesta:
-"Los estudios recientes indican que la esquizofrenia afecta al 1% de la población mundial, con mayor prevalencia en hombres. El tratamiento de primera línea incluye antipsicóticos atípicos combinados con terapia cognitivo-conductual."
+"Los estudios recientes indican que la esquizofrenia afecta al 1% de la población mundial, con mayor prevalencia en hombres. El tratamiento de primera línea incluye antipsicóticos atípicos combinados con terapia cognitivo-conductual. La detección temprana mejora significativamente el pronóstico.
 
-Ejemplo de MALA respuesta:
-"Según Wikipedia (https://...), la esquizofrenia es un trastorno... [snippet copiado]"
+**Fuentes consultadas:**
+- [NIMH - Schizophrenia Overview](https://www.nimh.nih.gov/health/topics/schizophrenia)
+- [WHO Mental Health Report](https://www.who.int/mental_health)
+- [Mayo Clinic - Schizophrenia Treatment](https://www.mayoclinic.org/diseases-conditions/schizophrenia)"
 
-Sintetiza la información encontrada de forma clara y profesional."""
+IMPORTANTE: Siempre incluye las URLs reales encontradas en los resultados de búsqueda."""
 
         user_prompt = f"""Pregunta del usuario: {query}
 
 Resultados de búsqueda:
 {raw_result}
 
-Sintetiza la información más relevante en lenguaje natural, omitiendo URLs y detalles técnicos."""
+Sintetiza la información más relevante en lenguaje natural, e INCLUYE las URLs de las fuentes más relevantes al final."""
 
         messages = [
             SystemMessage(content=system_prompt),

@@ -10,9 +10,9 @@ import type { ReactElement } from 'react'
 import BrainIcon from './components/BrainIcon'
 import LayoutSection from './components/LayoutSection'
 import DataExplorer from './pages/DataExplorer'
+import Navigation from './components/Navigation'
 import { useInsights } from './hooks'
-import { NAV_ITEMS } from './utils/constants'
-import { formatDateTime } from './utils/formatting'
+import { formatDateTime, toSlug } from './utils/formatting'
 import './App.css'
 
 /**
@@ -60,31 +60,10 @@ function App(): ReactElement {
 
       {/* Top navigation bar */}
       <header className="top-bar">
-        <span className="brand" aria-label="Brain, tu compañera de investigación">
+        <a href="/" className="brand" aria-label="Brain, tu compañera de investigación - Ir al inicio">
           Brain<span className="brand__spark" />
-        </span>
-        <nav className="nav" aria-label="Secciones principales de Brain">
-          {NAV_ITEMS.map((item) => (
-            <a key={item.id} href={`#${item.id}`} className="nav__link">
-              {item.label}
-            </a>
-          ))}
-          <a href="/chat" className="nav__link nav__link--primary">
-            <svg 
-              className="nav__link-icon" 
-              width="16" 
-              height="16" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            Chat IA
-          </a>
-        </nav>
+        </a>
+        <Navigation />
       </header>
 
       {/* Main content area */}
@@ -111,7 +90,7 @@ function App(): ReactElement {
               comités clínicos.
             </p>
             <div className="hero__actions">
-              <a href="/chat" className="btn btn--primary">
+              <a href="/chat" className="btn btn--primary" aria-label="Iniciar conversación con Brain IA">
                 <svg 
                   className="btn__icon" 
                   width="20" 
@@ -158,27 +137,44 @@ function App(): ReactElement {
 
           {insights && !loading && !error && (
             <section className="grid" aria-label="Resúmenes por dimensión analítica">
-              {insights.metric_sections.map((section) => (
-                <article
-                  key={section.title}
-                  className="card"
-                  aria-labelledby={`section-${section.title}`}
-                >
-                  <div className="card__header">
-                    <h2 id={`section-${section.title}`}>{section.title}</h2>
-                    <span className="card__period">{insights.sample_period}</span>
-                  </div>
-                  <ul className="card__metric-list">
-                    {section.metrics.map((metric) => (
-                      <li key={metric.title} className="card__metric-item">
-                        <p className="metric__title">{metric.title}</p>
-                        <p className="metric__value">{metric.value}</p>
-                        <p className="metric__description">{metric.description}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
+              {insights.metric_sections.map((section) => {
+                // Generate valid HTML ID from section title
+                const sectionId = `section-${toSlug(section.title)}`
+                
+                return (
+                  <article
+                    key={section.title}
+                    className="card"
+                    aria-labelledby={sectionId}
+                  >
+                    <div className="card__header">
+                      <h2 id={sectionId}>{section.title}</h2>
+                      <span className="card__period">{insights.sample_period}</span>
+                    </div>
+                    <dl className="card__metric-list">
+                      {section.metrics.map((metric) => {
+                        // Generate unique IDs for ARIA relationships
+                        const metricId = `metric-${toSlug(section.title)}-${toSlug(metric.title)}`
+                        const valueId = `value-${toSlug(section.title)}-${toSlug(metric.title)}`
+                        
+                        return (
+                          <div key={metric.title} className="card__metric-item">
+                            <dt className="metric__title" id={metricId}>{metric.title}</dt>
+                            <dd 
+                              className="metric__value" 
+                              id={valueId}
+                              aria-labelledby={`${metricId} ${valueId}`}
+                            >
+                              {metric.value}
+                            </dd>
+                            <dd className="metric__description">{metric.description}</dd>
+                          </div>
+                        )
+                      })}
+                    </dl>
+                  </article>
+                )
+              })}
             </section>
           )}
         </LayoutSection>

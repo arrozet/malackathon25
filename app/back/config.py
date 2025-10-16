@@ -77,7 +77,7 @@ class Config:
     # Improved CORS configuration for production
     CORS_ORIGINS: str = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173,http://158.179.212.221,http://158.179.212.221:80,http://158.179.212.221:3000",
+        "http://localhost:5173,http://127.0.0.1:5173,http://158.179.212.221,http://158.179.212.221:80,http://158.179.212.221:3000,https://dr-artificial.com,https://www.dr-artificial.com,http://dr-artificial.com",
     )
     
     # AI Service Configuration

@@ -3,12 +3,14 @@
  * 
  * This component manages the message display area with:
  * - Automatic scroll to bottom on new messages
- * - Loading indicator
+ * - Loading indicator with thinking chain
  * - Empty state
  * - Accessible scrolling region
  */
 
 import { useEffect, useRef, type ReactElement, type ReactNode } from 'react'
+import ThinkingChain from './ThinkingChain'
+import type { ThinkingStep } from '../types/chat'
 
 /**
  * Props for the ChatContainer component.
@@ -20,6 +22,8 @@ export interface ChatContainerProps {
   isLoading?: boolean
   /** Whether there are any messages */
   isEmpty?: boolean
+  /** Thinking steps to display (chain of thought) */
+  thinkingSteps?: ThinkingStep[]
 }
 
 /**
@@ -34,12 +38,13 @@ export interface ChatContainerProps {
 export default function ChatContainer({ 
   children, 
   isLoading = false,
-  isEmpty = false
+  isEmpty = false,
+  thinkingSteps = []
 }: ChatContainerProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
 
   /**
-   * Auto-scroll to bottom when new messages arrive.
+   * Auto-scroll to bottom when new messages or thinking steps arrive.
    * Uses smooth scrolling for better UX.
    */
   useEffect(() => {
@@ -49,7 +54,7 @@ export default function ChatContainer({
         behavior: 'smooth'
       })
     }
-  }, [children])
+  }, [children, thinkingSteps])
 
   return (
     <div 
@@ -83,18 +88,24 @@ export default function ChatContainer({
         </div>
       )}
 
-      {/* Loading indicator */}
+      {/* Thinking chain (if available) or loading indicator */}
       {isLoading && (
         <div className="chat-container__loading" aria-label="Cargando respuesta">
-          <div className="chat-message chat-message--assistant">
-            <div className="chat-message__content">
-              <div className="typing-indicator">
-                <span className="typing-indicator__dot"></span>
-                <span className="typing-indicator__dot"></span>
-                <span className="typing-indicator__dot"></span>
+          {thinkingSteps.length > 0 ? (
+            // Show thinking chain with progress
+            <ThinkingChain steps={thinkingSteps} isThinking={true} />
+          ) : (
+            // Fallback to simple loading indicator
+            <div className="chat-message chat-message--assistant">
+              <div className="chat-message__content">
+                <div className="typing-indicator">
+                  <span className="typing-indicator__dot"></span>
+                  <span className="typing-indicator__dot"></span>
+                  <span className="typing-indicator__dot"></span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

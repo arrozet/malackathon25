@@ -14,6 +14,7 @@ from app.back.services.health_service import check_health, get_pool_status_detai
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
+    prefix="/api",
     tags=["health"],
 )
 

@@ -57,9 +57,10 @@ async def lifespan(app: FastAPI):
     try:
         # Initialize database connection pool
         # Configured for multi-agent AI workloads + concurrent frontend requests
+        # Reduced min_connections for faster startup and debugging
         initialize_connection_pool(
-            min_connections=5,
-            max_connections=50,  # Oracle ADB supports 25-100+ connections
+            min_connections=2,    # Reduced from 5 for faster startup
+            max_connections=50,   # Oracle ADB supports 25-100+ connections
             increment=5,
             timeout=30  # Wait up to 30s if pool exhausted
         )

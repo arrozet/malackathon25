@@ -89,8 +89,12 @@ def initialize_connection_pool(
             f"timeout={timeout}s, getmode={'TIMEDWAIT' if getmode == oracledb.POOL_GETMODE_TIMEDWAIT else 'NOWAIT'}"
         )
         
-        # Test the connection
-        test_connection()
+        # Test the connection (non-blocking - logs warnings but doesn't raise)
+        try:
+            test_connection()
+        except Exception as test_error:
+            logger.warning(f"Initial connection test failed, but pool is ready: {str(test_error)}")
+            logger.warning("Service will continue startup. Connection issues may resolve themselves.")
         
     except oracledb.Error as e:
         error_obj, = e.args

@@ -43,12 +43,12 @@ export default function DataExplorer(): ReactElement {
     <div className="explorer-page">
       {/* Page header */}
       {/* 
-        ACCESIBILIDAD: <h1> como título principal de la página.
-        Cada vista debe tener un único h1 que identifique el contenido principal.
+        ACCESIBILIDAD: <h3> como título de sub-sección.
+        Este componente está dentro de una sección con h2, por lo que usa h3 para mantener jerarquía.
         REFERENCIA: WCAG 2.1 - 2.4.6 Headings and Labels (Level AA)
       */}
       <header className="explorer-header">
-        <h1>Exploración de datos</h1>
+        <h3>Exploración de datos</h3>
         <p className="explorer-subtitle">
           Filtra y visualiza los datos de admisiones de salud mental. Los gráficos se actualizan
           en tiempo real según los filtros aplicados.

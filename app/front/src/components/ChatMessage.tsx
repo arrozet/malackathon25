@@ -2,11 +2,16 @@
  * ChatMessage Component - Renders an individual chat message.
  * 
  * This component displays a message from either the user or the AI assistant,
- * with appropriate styling and accessibility support.
+ * with appropriate styling and accessibility support. Assistant messages support
+ * markdown rendering for rich formatting.
  */
 
 import type { ReactElement } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { ChatMessage as ChatMessageType } from '../types/chat'
+import MermaidRenderer from './MermaidRenderer'
+import { getToolInfo } from '../utils/toolIcons'
 
 /**
  * Props for the ChatMessage component.
@@ -52,9 +57,40 @@ export default function ChatMessage({ message }: ChatMessageProps): ReactElement
       aria-label={`Mensaje de ${isUser ? 'usuario' : 'asistente'}`}
     >
       <div className="chat-message__content">
-        {/* Message text */}
+        {/* Message text - render markdown for assistant, plain text for user */}
         <div className="chat-message__text">
-          {message.content}
+          {isAssistant ? (
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                // Ensure links open in new tab for security
+                a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                // Render Mermaid diagrams and code blocks
+                code: ({ node, className, children, ...props }) => {
+                  const match = /language-(\w+)/.exec(className || '')
+                  const language = match ? match[1] : null
+                  const inline = !className
+                  
+                  // Render Mermaid diagrams
+                  if (language === 'mermaid' && !inline) {
+                    const code = String(children).replace(/\n$/, '')
+                    return <MermaidRenderer chart={code} />
+                  }
+                  
+                  // Render other code blocks
+                  return inline ? (
+                    <code className="inline-code" {...props}>{children}</code>
+                  ) : (
+                    <code className={className} {...props}>{children}</code>
+                  )
+                }
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          ) : (
+            message.content
+          )}
         </div>
 
         {/* Footer with timestamp and tools */}
@@ -68,11 +104,25 @@ export default function ChatMessage({ message }: ChatMessageProps): ReactElement
           {/* Show tools used by assistant */}
           {isAssistant && message.toolsUsed && message.toolsUsed.length > 0 && (
             <div className="chat-message__tools" aria-label="Herramientas utilizadas">
-              {message.toolsUsed.map((tool, index) => (
-                <span key={index} className="chat-message__tool-badge">
-                  {tool}
-                </span>
-              ))}
+              {message.toolsUsed.map((tool, index) => {
+                const toolInfo = getToolInfo(tool)
+                return (
+                  <span 
+                    key={index} 
+                    className="chat-message__tool-badge"
+                    style={{ color: toolInfo.color }}
+                    title={toolInfo.name}
+                    aria-label={toolInfo.name}
+                  >
+                    <span className="chat-message__tool-icon" aria-hidden="true">
+                      {toolInfo.icon}
+                    </span>
+                    <span className="chat-message__tool-name">
+                      {toolInfo.name}
+                    </span>
+                  </span>
+                )
+              })}
             </div>
           )}
         </div>

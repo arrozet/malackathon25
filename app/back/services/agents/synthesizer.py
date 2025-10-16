@@ -46,7 +46,7 @@ class SynthesizerAgent:
             base_url="https://api.x.ai/v1",
             model="grok-4-fast-reasoning",
             temperature=0.5,  # Balanced creativity for natural responses
-            max_tokens=1000,
+            max_tokens=8000,  # Increased for longer, comprehensive responses
         )
         
         logger.info("Synthesizer Agent initialized")
@@ -132,12 +132,48 @@ PRINCIPIOS:
 4. **Honestidad**: Si hay errores o limitaciones, comunícalos claramente
 5. **Valor**: Destaca insights accionables y patrones relevantes
 
-FORMATO DE RESPUESTA:
-- Comienza respondiendo directamente a la pregunta
-- Integra información de múltiples especialistas de forma fluida
-- Usa párrafos cortos (2-3 oraciones)
-- Si hay diagramas o código, inclúyelos al final
-- Termina con una invitación a profundizar si es apropiado
+FORMATO DE RESPUESTA OBLIGATORIO - USA MARKDOWN RICO:
+
+1. **Respuesta directa**: Comienza con un párrafo respondiendo la pregunta principal
+
+2. **Datos clave**: Si hay estadísticas o números, usa **negritas** para destacarlos
+   - Ejemplo: "Se encontraron **1,234 episodios** en el periodo analizado"
+
+3. **Listas**: Cuando presentes múltiples puntos, usa listas con viñetas:
+   - Punto 1
+   - Punto 2
+   - Punto 3
+
+4. **Secciones**: Si la respuesta es larga, organiza con subtítulos markdown:
+   ### Análisis Principal
+   Contenido...
+   
+   ### Hallazgos Adicionales
+   Contenido...
+
+5. **Énfasis**: Usa **negritas** para conceptos importantes y *cursivas* para matices
+
+6. **Referencias**: Si usas información de búsquedas en internet, SIEMPRE incluye una sección al final:
+   
+   ---
+   
+   **Referencias:**
+   - [Título del artículo](URL)
+   - [Otro recurso](URL)
+
+7. **Diagramas**: Si generas código Mermaid, usa bloques de código con el lenguaje especificado:
+   
+   ```mermaid
+   flowchart TD
+       A[Inicio] --> B[Fin]
+   ```
+
+8. **Tablas**: Si presentas comparaciones, usa tablas markdown:
+   
+   | Categoría | Valor |
+   |-----------|-------|
+   | A         | 100   |
+   | B         | 200   |
 
 TONO:
 - Profesional pero cálido
@@ -150,8 +186,9 @@ NO HAGAS:
 - NO menciones "los especialistas dijeron" o "según el agente SQL"
 - NO uses jerga técnica de programación (SQL, JSON, APIs)
 - NO seas repetitivo con los resúmenes recibidos
+- NO olvides usar markdown para formatear tu respuesta
 
-Genera una respuesta integrada y profesional."""
+IMPORTANTE: Tu respuesta DEBE usar markdown. El usuario verá tu respuesta renderizada con formato rico."""
 
         user_prompt = f"""Pregunta del usuario: {user_query}
 
@@ -160,7 +197,14 @@ Genera una respuesta integrada y profesional."""
 Información recopilada por especialistas:
 {formatted_summaries}
 
-Genera una respuesta completa e integrada para el usuario."""
+INSTRUCCIONES IMPORTANTES:
+1. Genera una respuesta completa e integrada usando MARKDOWN RICO
+2. Si la información incluye referencias o fuentes (especialmente de búsquedas en internet), INCLÚYELAS al final de tu respuesta
+3. Usa **negritas** para destacar datos clave y estadísticas
+4. Organiza con listas y subtítulos cuando sea apropiado
+5. Si hay código Mermaid para diagramas, inclúyelo en bloques ```mermaid
+
+Genera tu respuesta ahora."""
 
         messages = [
             SystemMessage(content=system_prompt),
