@@ -171,6 +171,16 @@ def get_visualization_data(filters: DataFilters) -> DataVisualization:
                     WHEN EDAD >= 70 THEN '70+'
                     ELSE 'Desconocido'
                 END as age_group,
+                CASE 
+                    WHEN EDAD < 18 THEN 1
+                    WHEN EDAD BETWEEN 18 AND 29 THEN 2
+                    WHEN EDAD BETWEEN 30 AND 39 THEN 3
+                    WHEN EDAD BETWEEN 40 AND 49 THEN 4
+                    WHEN EDAD BETWEEN 50 AND 59 THEN 5
+                    WHEN EDAD BETWEEN 60 AND 69 THEN 6
+                    WHEN EDAD >= 70 THEN 7
+                    ELSE 999
+                END as sort_order,
                 COUNT(*) as cnt
             FROM SALUDMENTAL
             WHERE {where_clause}
@@ -184,13 +194,23 @@ def get_visualization_data(filters: DataFilters) -> DataVisualization:
                     WHEN EDAD BETWEEN 60 AND 69 THEN '60-69'
                     WHEN EDAD >= 70 THEN '70+'
                     ELSE 'Desconocido'
+                END,
+                CASE 
+                    WHEN EDAD < 18 THEN 1
+                    WHEN EDAD BETWEEN 18 AND 29 THEN 2
+                    WHEN EDAD BETWEEN 30 AND 39 THEN 3
+                    WHEN EDAD BETWEEN 40 AND 49 THEN 4
+                    WHEN EDAD BETWEEN 50 AND 59 THEN 5
+                    WHEN EDAD BETWEEN 60 AND 69 THEN 6
+                    WHEN EDAD >= 70 THEN 7
+                    ELSE 999
                 END
-            ORDER BY age_group
+            ORDER BY sort_order
         '''
         cursor.execute(query, params)
         age_groups = []
         for row in cursor.fetchall():
-            age_group, count = row
+            age_group, sort_order, count = row
             age_groups.append(AgeDistribution(
                 age_group=age_group,
                 count=_to_int(count),
@@ -251,6 +271,14 @@ def get_visualization_data(filters: DataFilters) -> DataVisualization:
                     WHEN "Estancia Días" > 30 THEN '> 30 días'
                     ELSE 'Desconocido'
                 END as stay_range,
+                CASE 
+                    WHEN "Estancia Días" < 3 THEN 1
+                    WHEN "Estancia Días" BETWEEN 3 AND 7 THEN 2
+                    WHEN "Estancia Días" BETWEEN 8 AND 14 THEN 3
+                    WHEN "Estancia Días" BETWEEN 15 AND 30 THEN 4
+                    WHEN "Estancia Días" > 30 THEN 5
+                    ELSE 999
+                END as sort_order,
                 COUNT(*) as cnt
             FROM SALUDMENTAL
             WHERE {where_clause}
@@ -262,13 +290,21 @@ def get_visualization_data(filters: DataFilters) -> DataVisualization:
                     WHEN "Estancia Días" BETWEEN 15 AND 30 THEN '15-30 días'
                     WHEN "Estancia Días" > 30 THEN '> 30 días'
                     ELSE 'Desconocido'
+                END,
+                CASE 
+                    WHEN "Estancia Días" < 3 THEN 1
+                    WHEN "Estancia Días" BETWEEN 3 AND 7 THEN 2
+                    WHEN "Estancia Días" BETWEEN 8 AND 14 THEN 3
+                    WHEN "Estancia Días" BETWEEN 15 AND 30 THEN 4
+                    WHEN "Estancia Días" > 30 THEN 5
+                    ELSE 999
                 END
-            ORDER BY stay_range
+            ORDER BY sort_order
         '''
         cursor.execute(query, params)
         stay_distribution = []
         for row in cursor.fetchall():
-            stay_range, count = row
+            stay_range, sort_order, count = row
             stay_distribution.append(StayDistribution(
                 stay_range=stay_range,
                 count=_to_int(count),
