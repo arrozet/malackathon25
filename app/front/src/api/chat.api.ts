@@ -80,10 +80,10 @@ export async function sendChatMessageStream(
     })) ?? []
   }
 
-  // Get the API base URL from the client module
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+  // Get the API base URL - use VITE_API_URL in development, relative path in production
+  const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
-  const response = await fetch(`${API_BASE_URL}/ai/chat/stream`, {
+  const response = await fetch(`${API_BASE_URL}/api/ai/chat/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

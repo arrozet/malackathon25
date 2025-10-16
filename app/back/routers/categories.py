@@ -13,7 +13,7 @@ from app.back.services.category_service import get_all_categories
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/data",
+    prefix="/api/data",
     tags=["categories"],
 )
 

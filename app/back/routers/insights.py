@@ -13,7 +13,7 @@ from app.back.services.insights_service import build_insight_summary
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/insights",
+    prefix="/api/insights",
     tags=["insights"],
 )
 

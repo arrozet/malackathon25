@@ -14,7 +14,7 @@ from app.back.services.visualization_service import get_visualization_data
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/data",
+    prefix="/api/data",
     tags=["visualization"],
 )
 
