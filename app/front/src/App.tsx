@@ -10,8 +10,8 @@ import type { ReactElement } from 'react'
 import BrainIcon from './components/BrainIcon'
 import LayoutSection from './components/LayoutSection'
 import DataExplorer from './pages/DataExplorer'
+import Navigation from './components/Navigation'
 import { useInsights } from './hooks'
-import { NAV_ITEMS } from './utils/constants'
 import { formatDateTime, toSlug } from './utils/formatting'
 import './App.css'
 
@@ -63,28 +63,7 @@ function App(): ReactElement {
         <a href="/" className="brand" aria-label="Brain, tu compañera de investigación - Ir al inicio">
           Brain<span className="brand__spark" />
         </a>
-        <nav className="nav" aria-label="Secciones principales de Brain">
-          {NAV_ITEMS.map((item) => (
-            <a key={item.id} href={`#${item.id}`} className="nav__link">
-              {item.label}
-            </a>
-          ))}
-          <a href="/chat" className="nav__link nav__link--primary" aria-label="Acceder al chat con inteligencia artificial">
-            <svg 
-              className="nav__link-icon" 
-              width="16" 
-              height="16" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            Chat IA
-          </a>
-        </nav>
+        <Navigation />
       </header>
 
       {/* Main content area */}
