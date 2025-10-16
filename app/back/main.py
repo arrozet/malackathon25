@@ -57,17 +57,22 @@ async def lifespan(app: FastAPI):
     try:
         # Initialize database connection pool
         # Configured for multi-agent AI workloads + concurrent frontend requests
-        # Reduced min_connections for faster startup and debugging
+        # Use different settings based on environment
+        is_production = config.APP_ENV in ["prod", "production"]
+        
         initialize_connection_pool(
-            min_connections=2,    # Reduced from 5 for faster startup
+            min_connections=1 if is_production else 2,    # Start with 1 in prod for faster startup
             max_connections=50,   # Oracle ADB supports 25-100+ connections
             increment=5,
-            timeout=30  # Wait up to 30s if pool exhausted
+            timeout=60 if is_production else 30  # Longer timeout in production for cloud latency
         )
         logger.info("Database connection pool initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize database connection pool: {str(e)}")
-        raise
+        logger.warning("Application will continue startup. Database operations may fail until connection is established.")
+        # Don't raise in production - allow app to start and retry connections
+        if not config.APP_ENV in ["prod", "production"]:
+            raise
     
     yield
     
