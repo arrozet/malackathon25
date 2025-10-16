@@ -1,133 +1,134 @@
--- normalizacion_schema.sql
--- Esquema relacional para Oracle Autonomous Database 23ai basado en la normalización
--- del dataset SaludMental_limpio_anon. El script crea tablas de dimensiones, hechos
--- y relaciones respetando los nombres originales de columnas proporcionados por el equipo EDA.
+SET DEFINE OFF;
 
-PROMPT Creando tablas de dimensiones...
+DROP TABLE "Ingreso_Procedimientos" CASCADE CONSTRAINTS;
+DROP TABLE "Ingreso_Diagnosticos" CASCADE CONSTRAINTS;
+DROP TABLE "Ingresos" CASCADE CONSTRAINTS;
+DROP TABLE "Pacientes" CASCADE CONSTRAINTS;
+DROP TABLE "GRD_APR" CASCADE CONSTRAINTS;
+DROP TABLE "Procedimientos" CASCADE CONSTRAINTS;
+DROP TABLE "Diagnosticos" CASCADE CONSTRAINTS;
+DROP TABLE "Centros" CASCADE CONSTRAINTS;
+DROP TABLE "Paises" CASCADE CONSTRAINTS;
+DROP TABLE "Comunidades_Autonomas" CASCADE CONSTRAINTS;
 
-CREATE TABLE "Comunidades_Autonomas" (
-  "ID_Comunidad_Autonoma" VARCHAR2(100 CHAR) PRIMARY KEY,
-  "Nombre_Comunidad" VARCHAR2(150 CHAR) NOT NULL
+
+CREATE TABLE comunidades_autonomas (
+  id_comunidad_autonoma VARCHAR2(100 CHAR) PRIMARY KEY,
+  nombre_comunidad VARCHAR2(150 CHAR) NOT NULL
 );
 
-CREATE TABLE "Paises" (
-  "ID_Pais" VARCHAR2(120 CHAR) PRIMARY KEY
+CREATE TABLE paises (
+  id_pais VARCHAR2(120 CHAR) PRIMARY KEY
 );
 
-CREATE TABLE "Centros" (
-  "ID_Centro" VARCHAR2(60 CHAR) PRIMARY KEY
+CREATE TABLE centros (
+  id_centro VARCHAR2(60 CHAR) PRIMARY KEY
 );
 
-CREATE TABLE "Diagnosticos" (
-  "ID_Diagnostico" VARCHAR2(20 CHAR) PRIMARY KEY,
-  "Categoria" VARCHAR2(200 CHAR)
+CREATE TABLE diagnosticos (
+  id_diagnostico VARCHAR2(20 CHAR) PRIMARY KEY,
+  categoria VARCHAR2(200 CHAR)
 );
 
-CREATE TABLE "Procedimientos" (
-  "ID_Procedimiento" VARCHAR2(30 CHAR) PRIMARY KEY
+CREATE TABLE procedimientos (
+  id_procedimiento VARCHAR2(30 CHAR) PRIMARY KEY
 );
 
-CREATE TABLE "GRD_APR" (
-  "ID_GRD_APR" VARCHAR2(20 CHAR) PRIMARY KEY,
-  "CDM_APR" VARCHAR2(10 CHAR),
-  "Nivel_Severidad_APR" VARCHAR2(10 CHAR),
-  "Riesgo_Mortalidad_APR" VARCHAR2(10 CHAR),
-  "Tipo_GRD_APR" VARCHAR2(50 CHAR)
+CREATE TABLE grd_apr (
+  id_grd_apr VARCHAR2(20 CHAR) PRIMARY KEY,
+  cdm_apr VARCHAR2(10 CHAR),
+  nivel_severidad_apr VARCHAR2(10 CHAR),
+  riesgo_mortalidad_apr VARCHAR2(10 CHAR),
+  tipo_grd_apr VARCHAR2(50 CHAR)
 );
 
-CREATE TABLE "Pacientes" (
-  "UUID_Paciente" VARCHAR2(36 CHAR) PRIMARY KEY,
-  "CIP_SNS_Recodificado" VARCHAR2(40 CHAR),
-  "Fecha_de_nacimiento" DATE,
-  "Sexo" VARCHAR2(20 CHAR),
-  "Grupo_Etario" VARCHAR2(20 CHAR),
-  "ID_Comunidad_Autonoma" VARCHAR2(100 CHAR),
-  "ID_Pais_Nacimiento" VARCHAR2(120 CHAR),
-  "ID_Pais_Residencia" VARCHAR2(120 CHAR),
-  CONSTRAINT "FK_Pacientes_Comunidades" FOREIGN KEY ("ID_Comunidad_Autonoma")
-    REFERENCES "Comunidades_Autonomas" ("ID_Comunidad_Autonoma"),
-  CONSTRAINT "FK_Pacientes_Pais_Nac" FOREIGN KEY ("ID_Pais_Nacimiento")
-    REFERENCES "Paises" ("ID_Pais"),
-  CONSTRAINT "FK_Pacientes_Pais_Res" FOREIGN KEY ("ID_Pais_Residencia")
-    REFERENCES "Paises" ("ID_Pais")
+CREATE TABLE pacientes (
+  uuid_paciente VARCHAR2(36 CHAR) PRIMARY KEY,
+  cip_sns_recodificado VARCHAR2(40 CHAR),
+  fecha_de_nacimiento DATE,
+  sexo VARCHAR2(20 CHAR),
+  grupo_etario VARCHAR2(20 CHAR),
+  id_comunidad_autonoma VARCHAR2(100 CHAR),
+  id_pais_nacimiento VARCHAR2(120 CHAR),
+  id_pais_residencia VARCHAR2(120 CHAR),
+  CONSTRAINT fk_pacientes_comunidades FOREIGN KEY (id_comunidad_autonoma)
+    REFERENCES comunidades_autonomas (id_comunidad_autonoma),
+  CONSTRAINT fk_pacientes_pais_nac FOREIGN KEY (id_pais_nacimiento)
+    REFERENCES paises (id_pais),
+  CONSTRAINT fk_pacientes_pais_res FOREIGN KEY (id_pais_residencia)
+    REFERENCES paises (id_pais)
 );
 
-PROMPT Creando tabla de hechos...
 
-CREATE TABLE "Ingresos" (
-  "ID_Ingreso" NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  "UUID_Paciente" VARCHAR2(36 CHAR) NOT NULL,
-  "ID_Centro" VARCHAR2(60 CHAR),
-  "ID_GRD_APR" VARCHAR2(20 CHAR),
-  "Numero_de_registro_anual" NUMBER(10),
-  "Fecha_de_Ingreso" DATE,
-  "Fecha_de_Fin_Contacto" DATE,
-  "Fecha_de_Inicio_contacto" TIMESTAMP,
-  "Circunstancia_de_Contacto" VARCHAR2(120 CHAR),
-  "Tipo_Alta" VARCHAR2(120 CHAR),
-  "Servicio" VARCHAR2(120 CHAR),
-  "Regimen_Financiacion" VARCHAR2(120 CHAR),
-  "Procedencia" VARCHAR2(120 CHAR),
-  "Continuidad_Asistencial" VARCHAR2(120 CHAR),
-  "Estancia_Dias" NUMBER(5),
-  "Estancia_Dias_Acotada" NUMBER(5),
-  "Duracion_Episodio_Calculada" NUMBER(5),
-  "Edad" NUMBER(3),
-  "Edad_en_Ingreso" NUMBER(3),
-  "Mes_de_Ingreso" DATE,
-  "Mes_Nombre_Ingreso" VARCHAR2(20 CHAR),
-  "Dia_Semana_Ingreso" VARCHAR2(20 CHAR),
-  "Coste_APR" NUMBER(14,2),
-  "Peso_Español_APR" NUMBER(10,4),
-  "Ingreso_en_UCI" CHAR(1 CHAR),
-  "Diagnosticos_totales" NUMBER(2),
-  "Procedimientos_totales" NUMBER(2),
-  "Tiene_procedimiento" CHAR(1 CHAR),
-  "Diagnostico_F" CHAR(1 CHAR),
-  "Tiene_Comorbilidad" CHAR(1 CHAR),
-  CONSTRAINT "FK_Ingresos_Pacientes" FOREIGN KEY ("UUID_Paciente")
-    REFERENCES "Pacientes" ("UUID_Paciente"),
-  CONSTRAINT "FK_Ingresos_Centros" FOREIGN KEY ("ID_Centro")
-    REFERENCES "Centros" ("ID_Centro"),
-  CONSTRAINT "FK_Ingresos_GRD" FOREIGN KEY ("ID_GRD_APR")
-    REFERENCES "GRD_APR" ("ID_GRD_APR")
+CREATE TABLE ingresos (
+  id_ingreso NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  uuid_paciente VARCHAR2(36 CHAR) NOT NULL,
+  id_centro VARCHAR2(60 CHAR),
+  id_grd_apr VARCHAR2(20 CHAR),
+  numero_de_registro_anual NUMBER(10),
+  fecha_de_ingreso DATE,
+  fecha_de_fin_contacto DATE,
+  fecha_de_inicio_contacto TIMESTAMP,
+  circunstancia_de_contacto VARCHAR2(120 CHAR),
+  tipo_alta VARCHAR2(120 CHAR),
+  servicio VARCHAR2(120 CHAR),
+  regimen_financiacion VARCHAR2(120 CHAR),
+  procedencia VARCHAR2(120 CHAR),
+  continuidad_asistencial VARCHAR2(120 CHAR),
+  estancia_dias NUMBER(5),
+  estancia_dias_acotada NUMBER(5),
+  duracion_episodio_calculada NUMBER(5),
+  edad NUMBER(3),
+  edad_en_ingreso NUMBER(3),
+  mes_de_ingreso DATE,
+  mes_nombre_ingreso VARCHAR2(20 CHAR),
+  dia_semana_ingreso VARCHAR2(20 CHAR),
+  coste_apr NUMBER(14,2),
+  peso_español_apr NUMBER(10,4),
+  ingreso_en_uci CHAR(1 CHAR),
+  diagnosticos_totales NUMBER(2),
+  procedimientos_totales NUMBER(2),
+  tiene_procedimiento CHAR(1 CHAR),
+  diagnostico_f CHAR(1 CHAR),
+  tiene_comorbilidad CHAR(1 CHAR),
+  CONSTRAINT fk_ingresos_pacientes FOREIGN KEY (uuid_paciente)
+    REFERENCES pacientes (uuid_paciente),
+  CONSTRAINT fk_ingresos_centros FOREIGN KEY (id_centro)
+    REFERENCES centros (id_centro),
+  CONSTRAINT fk_ingresos_grd FOREIGN KEY (id_grd_apr)
+    REFERENCES grd_apr (id_grd_apr)
 );
 
-PROMPT Creando tablas de relación...
 
-CREATE TABLE "Ingreso_Diagnosticos" (
-  "ID_Ingreso_Diagnostico" NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  "ID_Ingreso" NUMBER NOT NULL,
-  "ID_Diagnostico" VARCHAR2(20 CHAR) NOT NULL,
-  "Orden_Diagnostico" NUMBER(2) NOT NULL,
-  "POA" CHAR(1 CHAR),
-  CONSTRAINT "FK_Ingreso_Diag_Ingreso" FOREIGN KEY ("ID_Ingreso")
-    REFERENCES "Ingresos" ("ID_Ingreso")
+CREATE TABLE ingreso_diagnosticos (
+  id_ingreso_diagnostico NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id_ingreso NUMBER NOT NULL,
+  id_diagnostico VARCHAR2(20 CHAR) NOT NULL,
+  orden_diagnostico NUMBER(2) NOT NULL,
+  poa CHAR(1 CHAR),
+  CONSTRAINT fk_ingreso_diag_ingreso FOREIGN KEY (id_ingreso)
+    REFERENCES ingresos (id_ingreso)
     ON DELETE CASCADE,
-  CONSTRAINT "FK_Ingreso_Diag_Diag" FOREIGN KEY ("ID_Diagnostico")
-    REFERENCES "Diagnosticos" ("ID_Diagnostico")
+  CONSTRAINT fk_ingreso_diag_diag FOREIGN KEY (id_diagnostico)
+    REFERENCES diagnosticos (id_diagnostico)
 );
 
-CREATE TABLE "Ingreso_Procedimientos" (
-  "ID_Ingreso_Procedimiento" NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  "ID_Ingreso" NUMBER NOT NULL,
-  "ID_Procedimiento" VARCHAR2(30 CHAR) NOT NULL,
-  "Orden_Procedimiento" NUMBER(2) NOT NULL,
-  CONSTRAINT "FK_Ingreso_Proc_Ingreso" FOREIGN KEY ("ID_Ingreso")
-    REFERENCES "Ingresos" ("ID_Ingreso")
+CREATE TABLE ingreso_procedimientos (
+  id_ingreso_procedimiento NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id_ingreso NUMBER NOT NULL,
+  id_procedimiento VARCHAR2(30 CHAR) NOT NULL,
+  orden_procedimiento NUMBER(2) NOT NULL,
+  CONSTRAINT fk_ingreso_proc_ingreso FOREIGN KEY (id_ingreso)
+    REFERENCES ingresos (id_ingreso)
     ON DELETE CASCADE,
-  CONSTRAINT "FK_Ingreso_Proc_Proc" FOREIGN KEY ("ID_Procedimiento")
-    REFERENCES "Procedimientos" ("ID_Procedimiento")
+  CONSTRAINT fk_ingreso_proc_proc FOREIGN KEY (id_procedimiento)
+    REFERENCES procedimientos (id_procedimiento)
 );
 
-PROMPT Creando índices auxiliares...
 
-CREATE INDEX "IDX_Ingresos_UUID" ON "Ingresos" ("UUID_Paciente");
-CREATE INDEX "IDX_Ingresos_Centro" ON "Ingresos" ("ID_Centro");
-CREATE INDEX "IDX_Ingreso_Diag_Ingreso" ON "Ingreso_Diagnosticos" ("ID_Ingreso");
-CREATE INDEX "IDX_Ingreso_Diag_Diag" ON "Ingreso_Diagnosticos" ("ID_Diagnostico");
-CREATE INDEX "IDX_Ingreso_Proc_Ingreso" ON "Ingreso_Procedimientos" ("ID_Ingreso");
-CREATE INDEX "IDX_Ingreso_Proc_Proc" ON "Ingreso_Procedimientos" ("ID_Procedimiento");
-
-PROMPT Esquema normalizado creado correctamente.
-
+CREATE INDEX idx_ingresos_uuid ON ingresos (uuid_paciente);
+CREATE INDEX idx_ingresos_centro ON ingresos (id_centro);
+CREATE INDEX idx_ingreso_diag_ingreso ON ingreso_diagnosticos (id_ingreso);
+CREATE INDEX idx_ingreso_diag_diag ON ingreso_diagnosticos (id_diagnostico);
+CREATE INDEX idx_ingreso_proc_ingreso ON ingreso_procedimientos (id_ingreso);
+CREATE INDEX idx_ingreso_proc_proc ON ingreso_procedimientos (id_procedimiento);
