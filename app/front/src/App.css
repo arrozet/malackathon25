@@ -6,7 +6,8 @@
   gap: 3.5rem;
   background: radial-gradient(circle at top left, rgba(30, 18, 62, 0.65), rgba(12, 11, 24, 0.95) 50%),
     linear-gradient(160deg, rgba(12, 11, 24, 0.9), #090817 70%);
-  color: #e5e7eb;
+  color: #f3f4f6;
+  /* Updated from #e5e7eb to #f3f4f6 for WCAG AA compliance */
   font-family: 'Inter', 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -214,7 +215,8 @@ h1 {
 }
 
 .section__header p {
-  color: #cbd5f5;
+  color: #d1d5db;
+  /* Updated from #cbd5f5 to #d1d5db for better WCAG AA compliance */
   line-height: 1.6;
   margin: 0;
   font-size: 1rem;
@@ -302,7 +304,8 @@ h1 {
 
 .metric__title {
   font-size: 0.95rem;
-  color: #cbd5f5;
+  color: #d1d5db;
+  /* Updated from #cbd5f5 to #d1d5db for WCAG AA compliance */
   margin: 0;
   letter-spacing: 0.01em;
 }
@@ -316,7 +319,8 @@ h1 {
 
 .metric__description {
   font-size: 0.9rem;
-  color: #9ca3c7;
+  color: #d1d5db;
+  /* Updated from #9ca3c7 to #d1d5db for WCAG AA compliance (4.5:1 minimum) */
   margin: 0;
   line-height: 1.5;
 }
@@ -336,7 +340,8 @@ h1 {
 
 .footer-content > small {
   font-size: 0.85rem;
-  color: #a5b4fc;
+  color: #c4b5fd;
+  /* Updated from #a5b4fc to #c4b5fd for WCAG AA compliance */
 }
 
 .footer-nav {
@@ -366,13 +371,15 @@ h1 {
 }
 
 .footer-separator {
-  color: #9d9fff;
+  color: #c4b5fd;
+  /* Updated from #9d9fff to #c4b5fd for WCAG AA compliance */
   font-size: 0.85rem;
 }
 
 .footer-timestamp {
   font-size: 0.8rem;
-  color: #9d9fff;
+  color: #c4b5fd;
+  /* Updated from #9d9fff to #c4b5fd for WCAG AA compliance */
 }
 
 @media (max-width: 960px) {

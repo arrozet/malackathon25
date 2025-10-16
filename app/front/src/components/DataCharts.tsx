@@ -68,6 +68,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
 
   /**
    * Custom tooltip component for displaying detailed chart information.
+   * Ensures WCAG AA compliance with 4.5:1 contrast ratio for all text.
    * 
    * @param props - Tooltip properties
    * @returns Tooltip element or null
@@ -79,16 +80,39 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
         <div className="chart-tooltip" role="tooltip" aria-live="polite">
           <p className="tooltip-label">{label}</p>
           {payload.map((entry: any, index: number) => (
-            <p key={index} className="tooltip-value" style={{ color: entry.color }}>
-              {entry.name}: {entry.value}
-              {entry.payload.percentage !== undefined &&
-                ` (${entry.payload.percentage.toFixed(1)}%)`}
+            <p key={index} className="tooltip-value">
+              <span className="tooltip-indicator" style={{ backgroundColor: entry.color }} aria-hidden="true" />
+              <span className="tooltip-text">
+                {entry.name}: <strong>{entry.value}</strong>
+                {entry.payload.percentage !== undefined &&
+                  ` (${entry.payload.percentage.toFixed(1)}%)`}
+              </span>
             </p>
           ))}
         </div>
       )
     }
     return null
+  }
+
+  /**
+   * Custom cursor styling configuration.
+   * Uses a vibrant purple line that's clearly visible.
+   */
+  const customCursor = {
+    stroke: COLORS.secondary,
+    strokeWidth: 3,
+    opacity: 0.9,
+    strokeDasharray: '5 5',
+  }
+
+  /**
+   * Custom bar cursor styling.
+   * Creates a visible purple overlay on hover.
+   */
+  const customBarCursor = {
+    fill: COLORS.secondary,
+    opacity: 0.3,
   }
 
   return (
@@ -125,7 +149,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
               style={{ fontSize: isMobile ? '10px' : '13px' }}
               tick={{ width: isMobile ? 120 : 260 }}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={customBarCursor} />
             <Legend />
             <Bar dataKey="count" fill={COLORS.primary} name="Admisiones" />
           </BarChart>
@@ -143,7 +167,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
             <XAxis dataKey="period" stroke={COLORS.text} />
             <YAxis stroke={COLORS.text} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={customCursor} />
             <Legend />
             <Line
               type="monotone"
@@ -151,6 +175,8 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
               stroke={COLORS.accent}
               strokeWidth={2}
               name="Admisiones"
+              dot={{ fill: COLORS.accent, strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, fill: COLORS.primary, stroke: COLORS.accent, strokeWidth: 2 }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -230,7 +256,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
                 )
               })}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
             <Legend />
           </PieChart>
         </ResponsiveContainer>
@@ -244,7 +270,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
             <XAxis dataKey="age_group" stroke={COLORS.text} />
             <YAxis stroke={COLORS.text} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={customBarCursor} />
             <Legend />
             <Bar dataKey="count" fill={COLORS.secondary} name="Admisiones" />
           </BarChart>
@@ -262,7 +288,7 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
             <XAxis dataKey="stay_range" stroke={COLORS.text} />
             <YAxis stroke={COLORS.text} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={customBarCursor} />
             <Legend />
             <Bar dataKey="count" fill={COLORS.success} name="Admisiones" />
           </BarChart>

@@ -78,7 +78,8 @@ select:focus-visible {
 
 .explorer-subtitle {
   font-size: 1rem;
-  color: #9ca3af;
+  color: #d1d5db;
+  /* Improved from #9ca3af to #d1d5db for WCAG AA compliance (4.5:1 minimum) */
   margin: 0;
 }
 
@@ -127,7 +128,8 @@ select:focus-visible {
   margin-bottom: 0.75rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #a855f7;
+  color: #c4b5fd;
+  /* Changed from #a855f7 to #c4b5fd for WCAG AA compliance (contrast ratio > 6:1) */
 }
 
 .filters-header {
@@ -143,13 +145,15 @@ select:focus-visible {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #e5e7eb;
+  color: #f3f4f6;
+  /* Updated from #e5e7eb to #f3f4f6 for enhanced WCAG AA compliance */
 }
 
 .btn-reset {
   background: transparent;
   border: 1px solid #7c3aed;
-  color: #b876f9;
+  color: #c4b5fd;
+  /* Changed from #b876f9 to #c4b5fd for WCAG AA compliance (contrast ratio > 6:1) */
   padding: 0.375rem 0.75rem;
   border-radius: 6px;
   font-size: 0.875rem;
@@ -176,7 +180,8 @@ select:focus-visible {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #e5e7eb;
+  color: #f3f4f6;
+  /* Updated from #e5e7eb to #f3f4f6 for WCAG AA compliance (contrast ratio > 14:1) */
   margin-bottom: 0.5rem;
 }
 
@@ -186,7 +191,8 @@ select:focus-visible {
   border: 1px solid #374151;
   border-radius: 8px;
   padding: 0.625rem 0.75rem;
-  color: #e5e7eb;
+  color: #f3f4f6;
+  /* Updated from #e5e7eb to #f3f4f6 for WCAG AA compliance */
   font-size: 0.875rem;
   transition: all 0.2s ease;
 }
@@ -250,14 +256,16 @@ select.filter-input {
 
 .summary-label {
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: #d1d5db;
+  /* Improved contrast from #9ca3af to #d1d5db for WCAG AA compliance */
   font-weight: 500;
 }
 
 .summary-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #a473ff;
+  color: #c4b5fd;
+  /* Changed from #a473ff to #c4b5fd for better contrast ratio (>7:1) */
 }
 
 .chart-card {
@@ -270,30 +278,64 @@ select.filter-input {
 .chart-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #e5e7eb;
+  color: #f3f4f6;
+  /* #f3f4f6 on rgba(29, 27, 45, 0.6) provides contrast ratio > 12:1 - WCAG AAA compliant */
   margin: 0 0 1rem 0;
 }
 
 /* Custom Tooltip for Charts */
 .chart-tooltip {
   background: rgba(13, 12, 29, 0.95);
-  border: 1px solid #374151;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid rgba(168, 85, 247, 0.6);
+  border-radius: 12px;
+  padding: 0.875rem 1.125rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 
+              0 0 20px rgba(168, 85, 247, 0.3);
+  max-width: 320px;
 }
 
 .tooltip-label {
   font-weight: 600;
-  color: #e5e7eb;
-  margin: 0 0 0.5rem 0;
-  font-size: 0.875rem;
+  color: #f8fafc;
+  margin: 0 0 0.625rem 0;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
+  border-bottom: 1.5px solid rgba(168, 85, 247, 0.5);
+  padding-bottom: 0.5rem;
 }
 
 .tooltip-value {
-  margin: 0.25rem 0;
+  margin: 0.375rem 0;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+/* Color indicator dot for tooltip - uses background color instead of text color for accessibility */
+.tooltip-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Tooltip text with WCAG AA compliant contrast (4.5:1 minimum) */
+.tooltip-text {
+  color: #f3f4f6;
+  /* #f3f4f6 on rgba(13, 12, 29, 0.95) provides contrast ratio > 14:1 */
+  line-height: 1.5;
+}
+
+.tooltip-text strong {
+  color: #ffffff;
+  /* Pure white for maximum contrast on numeric values */
+  font-weight: 600;
 }
 
 /* Status Messages */
@@ -318,7 +360,8 @@ select.filter-input {
 
 .status-message .hint {
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: #d1d5db;
+  /* Improved from #9ca3af to #d1d5db for WCAG AA compliance */
 }
 
 .status-message.status--error {
