@@ -69,12 +69,11 @@ def initialize_connection_pool(
         logger.info(f"Using wallet from: {config.TNS_ADMIN}")
         
         # Create connection pool using thin mode with wallet
-        # Note: Pool creation is lazy - it doesn't establish connections until first use
         _connection_pool = oracledb.create_pool(
             user=config.ORACLE_USER,
             password=config.ORACLE_PASSWORD,
             dsn=config.ORACLE_DSN,
-            min=0,  # Start with 0 connections for faster startup
+            min=min_connections,
             max=max_connections,
             increment=increment,
             getmode=getmode,  # TIMEDWAIT: wait for connection with timeout
@@ -82,39 +81,20 @@ def initialize_connection_pool(
             config_dir=config.TNS_ADMIN,  # Path to wallet directory
             wallet_location=config.TNS_ADMIN,  # Same as config_dir for wallet
             wallet_password=config.ORACLE_WALLET_PASSWORD,  # Wallet encryption password
-            # Additional parameters for production stability
-            ping_interval=60,  # Test idle connections every 60 seconds
-            stmtcachesize=20,  # Statement cache for better performance
         )
         
         logger.info(
             f"Connection pool created successfully: "
-            f"min={0}, max={max_connections}, increment={increment}, "
+            f"min={min_connections}, max={max_connections}, increment={increment}, "
             f"timeout={timeout}s, getmode={'TIMEDWAIT' if getmode == oracledb.POOL_GETMODE_TIMEDWAIT else 'NOWAIT'}"
         )
         
-        # Try to establish initial connections gradually
-        logger.info(f"Attempting to establish {min_connections} initial connection(s)...")
-        successful_connections = 0
-        for i in range(min_connections):
-            try:
-                with get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT 1 FROM DUAL")
-                    cursor.close()
-                    successful_connections += 1
-                    logger.info(f"Successfully established connection {successful_connections}/{min_connections}")
-            except Exception as conn_error:
-                logger.warning(f"Failed to establish initial connection {i+1}/{min_connections}: {str(conn_error)}")
-        
-        if successful_connections > 0:
-            logger.info(f"Connection pool ready with {successful_connections}/{min_connections} initial connection(s)")
-        else:
-            logger.warning(
-                "No initial connections could be established. "
-                "Pool is ready but database operations will fail until connectivity is restored. "
-                "Check network connectivity to Oracle Cloud and wallet configuration."
-            )
+        # Test the connection (non-blocking - logs warnings but doesn't raise)
+        try:
+            test_connection()
+        except Exception as test_error:
+            logger.warning(f"Initial connection test failed, but pool is ready: {str(test_error)}")
+            logger.warning("Service will continue startup. Connection issues may resolve themselves.")
         
     except oracledb.Error as e:
         error_obj, = e.args
