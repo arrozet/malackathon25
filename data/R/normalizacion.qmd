@@ -23,6 +23,39 @@ library(readxl)
 library(writexl)
 library(lubridate)
 library(purrr)
+
+#' Envuelve un vector de caracteres en comillas simples escapando su contenido.
+#'
+#' @param x vector con valores que se desean serializar como texto.
+#' @return vector `character` con las entradas rodeadas de comillas simples.
+sql_quote <- function(x) {
+  x <- as.character(x)
+  ifelse(
+    is.na(x),
+    NA_character_,
+    paste0("'", stringr::str_replace_all(x, "'", "''"), "'")
+  )
+}
+
+#' Convierte valores booleanos o equivalentes a enteros 0/1 para SQL.
+#'
+#' @param x vector con valores lógicos, numéricos o textos equivalentes a booleanos.
+#' @return vector `integer` con valores 0, 1 o `NA` si no se puede determinar.
+to_binary <- function(x) {
+  if (is.logical(x)) {
+    return(as.integer(x))
+  }
+  if (is.numeric(x)) {
+    return(ifelse(is.na(x), NA_integer_, ifelse(x == 0, 0L, 1L)))
+  }
+  x_chr <- stringr::str_to_upper(stringr::str_trim(as.character(x)))
+  x_chr[x_chr %in% c("", "NA")] <- NA_character_
+  dplyr::case_when(
+    x_chr %in% c("TRUE", "T", "SI", "S", "1") ~ 1L,
+    x_chr %in% c("FALSE", "F", "NO", "N", "0") ~ 0L,
+    TRUE ~ NA_integer_
+  )
+}
 ```
 
 ## Carga de datos
@@ -48,8 +81,8 @@ comunidades_autonomas_tbl <- datos_brutos %>%
   distinct(`Comunidad Autónoma`) %>%
   filter(!is.na(`Comunidad Autónoma`), `Comunidad Autónoma` != "") %>%
   transmute(
-    ID_Comunidad_Autonoma = `Comunidad Autónoma`,
-    Nombre_Comunidad = `Comunidad Autónoma`
+    ID_Comunidad_Autonoma = sql_quote(`Comunidad Autónoma`),
+    Nombre_Comunidad = sql_quote(`Comunidad Autónoma`)
   ) %>%
   arrange(Nombre_Comunidad)
 
@@ -67,6 +100,7 @@ paises_tbl <- datos_brutos %>%
   filter(!is.na(ID_Pais), ID_Pais != "") %>%
   mutate(ID_Pais = str_remove(as.character(ID_Pais), "\\.0$")) %>%
   distinct(ID_Pais) %>%
+  mutate(ID_Pais = sql_quote(ID_Pais)) %>%
   arrange(ID_Pais)
 
 paises_tbl %>% slice_head(n = 10)
@@ -80,7 +114,7 @@ Los centros ya cuentan con un código recodificado; lo utilizamos directamente c
 centros_tbl <- datos_brutos %>%
   distinct(`Centro Recodificado`) %>%
   filter(!is.na(`Centro Recodificado`), `Centro Recodificado` != "") %>%
-  transmute(ID_Centro = `Centro Recodificado`) %>%
+  transmute(ID_Centro = sql_quote(`Centro Recodificado`)) %>%
   arrange(ID_Centro)
 
 centros_tbl %>% slice_head(n = 10)
@@ -96,11 +130,11 @@ grd_apr_tbl <- datos_brutos %>%
   filter(!is.na(`GRD APR`), `GRD APR` != "") %>%
   distinct() %>%
   transmute(
-    ID_GRD_APR = `GRD APR`,
-    CDM_APR = `CDM APR`,
-    Nivel_Severidad_APR = `Nivel Severidad APR`,
-    Riesgo_Mortalidad_APR = `Riesgo Mortalidad APR`,
-    Tipo_GRD_APR = `Tipo GRD APR`
+    ID_GRD_APR = sql_quote(`GRD APR`),
+    CDM_APR = sql_quote(`CDM APR`),
+    Nivel_Severidad_APR = sql_quote(`Nivel Severidad APR`),
+    Riesgo_Mortalidad_APR = sql_quote(`Riesgo Mortalidad APR`),
+    Tipo_GRD_APR = sql_quote(`Tipo GRD APR`)
   ) %>%
   arrange(ID_GRD_APR)
 
@@ -142,6 +176,7 @@ diagnosticos_tbl <- diagnosticos_long %>%
     },
     .groups = "drop"
   ) %>%
+  mutate(ID_Diagnostico = sql_quote(ID_Diagnostico)) %>%
   arrange(ID_Diagnostico)
 
 diagnosticos_tbl %>% slice_head(n = 10)
@@ -160,6 +195,7 @@ procedimientos_tbl <- datos_brutos %>%
   pivot_longer(cols = everything(), names_to = "Fuente", values_to = "ID_Procedimiento") %>%
   filter(!is.na(ID_Procedimiento), ID_Procedimiento != "") %>%
   distinct(ID_Procedimiento) %>%
+  mutate(ID_Procedimiento = sql_quote(ID_Procedimiento)) %>%
   arrange(ID_Procedimiento)
 
 procedimientos_tbl %>% slice_head(n = 10)
@@ -174,14 +210,14 @@ pacientes_tbl <- datos_brutos %>%
   arrange(`UUID_Paciente`, `Fecha de Ingreso`) %>%
   distinct(`UUID_Paciente`, .keep_all = TRUE) %>%
   transmute(
-    UUID_Paciente = `UUID_Paciente`,
-    CIP_SNS_Recodificado = `CIP SNS Recodificado`,
-    Fecha_de_nacimiento = `Fecha de nacimiento`,
-    Sexo = `Sexo`,
-    Grupo_Etario = `Grupo_Etario`,
-    ID_Comunidad_Autonoma = `Comunidad Autónoma`,
-    ID_Pais_Nacimiento = str_remove(as.character(`País Nacimiento`), "\\.0$"),
-    ID_Pais_Residencia = str_remove(as.character(`País Residencia`), "\\.0$")
+    UUID_Paciente = sql_quote(`UUID_Paciente`),
+    CIP_SNS_Recodificado = sql_quote(`CIP SNS Recodificado`),
+    Fecha_de_nacimiento = sql_quote(format(as_date(`Fecha de nacimiento`), "%Y-%m-%d")),
+    Sexo = sql_quote(`Sexo`),
+    Grupo_Etario = sql_quote(`Grupo_Etario`),
+    ID_Comunidad_Autonoma = sql_quote(`Comunidad Autónoma`),
+    ID_Pais_Nacimiento = sql_quote(str_remove(as.character(`País Nacimiento`), "\\.0$")),
+    ID_Pais_Residencia = sql_quote(str_remove(as.character(`País Residencia`), "\\.0$"))
   )
 
 pacientes_tbl %>% slice_head(n = 10)
@@ -195,8 +231,8 @@ Cada fila representa un episodio hospitalario. Se genera `ID_Ingreso` secuencial
 ingresos_tbl <- datos_brutos %>%
   mutate(
     ID_Ingreso = row_number(),
-    ID_Centro = `Centro Recodificado`,
-    ID_GRD_APR = `GRD APR`,
+    ID_Centro = sql_quote(`Centro Recodificado`),
+    ID_GRD_APR = sql_quote(`GRD APR`),
     Numero_de_registro_anual = `Número de registro anual`,
     Fecha_de_Inicio_contacto = case_when(
       !is.na(`Fecha Inicio Contacto Fecha`) & !is.na(`Fecha Inicio Contacto Hora`) & `Fecha Inicio Contacto Hora` != "" ~
@@ -207,35 +243,35 @@ ingresos_tbl <- datos_brutos %>%
   ) %>%
   transmute(
     ID_Ingreso,
-    UUID_Paciente = `UUID_Paciente`,
+    UUID_Paciente = sql_quote(`UUID_Paciente`),
     ID_Centro,
     ID_GRD_APR,
     Numero_de_registro_anual,
-    Fecha_de_Ingreso = as_date(`Fecha de Ingreso`),
-    Fecha_de_Fin_Contacto = as_date(`Fecha de Fin Contacto`),
-    Fecha_de_Inicio_contacto = format(Fecha_de_Inicio_contacto, "%Y-%m-%d %H:%M:%S"),
-    Circunstancia_de_Contacto = `Circunstancia de Contacto`,
-    Tipo_Alta = `Tipo Alta`,
-    Servicio = `Servicio`,
-    Regimen_Financiacion = `Régimen Financiación`,
-    Procedencia = `Procedencia`,
-    Continuidad_Asistencial = `Continuidad Asistencial`,
+    Fecha_de_Ingreso = sql_quote(format(as_date(`Fecha de Ingreso`), "%Y-%m-%d")),
+    Fecha_de_Fin_Contacto = sql_quote(format(as_date(`Fecha de Fin Contacto`), "%Y-%m-%d")),
+    Fecha_de_Inicio_contacto = sql_quote(format(Fecha_de_Inicio_contacto, "%Y-%m-%d %H:%M:%S")),
+    Circunstancia_de_Contacto = sql_quote(`Circunstancia de Contacto`),
+    Tipo_Alta = sql_quote(`Tipo Alta`),
+    Servicio = sql_quote(`Servicio`),
+    Regimen_Financiacion = sql_quote(`Régimen Financiación`),
+    Procedencia = sql_quote(`Procedencia`),
+    Continuidad_Asistencial = sql_quote(`Continuidad Asistencial`),
     Estancia_Dias = `Estancia Días`,
     Estancia_Dias_Acotada = `Estancia_Dias_Acotada`,
     Duracion_Episodio_Calculada = `Duracion_Episodio_Calculada`,
     Edad = `Edad`,
     Edad_en_Ingreso = `Edad en Ingreso`,
-    Mes_de_Ingreso = format(as_date(`Mes de Ingreso`), "%Y-%m-%d"),
-    Mes_Nombre_Ingreso = `Mes_Nombre_Ingreso`,
-    Dia_Semana_Ingreso = `Dia_Semana_Ingreso`,
+    Mes_de_Ingreso = sql_quote(format(as_date(`Mes de Ingreso`), "%Y-%m-%d")),
+    Mes_Nombre_Ingreso = sql_quote(`Mes_Nombre_Ingreso`),
+    Dia_Semana_Ingreso = sql_quote(`Dia_Semana_Ingreso`),
     Coste_APR = `Coste APR`,
     Peso_Español_APR = `Peso Español APR`,
-    Ingreso_en_UCI = if_else(is.na(`Ingreso en UCI`), NA_character_, as.character(as.integer(`Ingreso en UCI`))),
+    Ingreso_en_UCI = to_binary(`Ingreso en UCI`),
     Diagnosticos_totales = `Diagnosticos_totales`,
     Procedimientos_totales = `Procedimientos_totales`,
-    Tiene_procedimiento = if_else(`Tiene_procedimiento`, "S", "N"),
-    Diagnostico_F = if_else(`Diagnostico_F`, "S", "N"),
-    Tiene_Comorbilidad = if_else(`Tiene_Comorbilidad`, "S", "N")
+    Tiene_procedimiento = to_binary(`Tiene_procedimiento`),
+    Diagnostico_F = to_binary(`Diagnostico_F`),
+    Tiene_Comorbilidad = to_binary(`Tiene_Comorbilidad`)
   )
 
 ingresos_tbl %>% slice_head(n = 10)
@@ -434,7 +470,7 @@ dim_comunidades_autonomas <- datos %>%
   filter(!is.na(comunidad_autonoma), comunidad_autonoma != "") %>%
   mutate(
     ID_Comunidad_Autonoma = dense_rank(comunidad_autonoma),
-    Nombre_Comunidad = comunidad_autonoma
+    Nombre_Comunidad = sql_quote(comunidad_autonoma)
   ) %>%
   select(ID_Comunidad_Autonoma, Nombre_Comunidad) %>%
   arrange(ID_Comunidad_Autonoma)
@@ -453,6 +489,7 @@ dim_paises <- datos %>%
   mutate(ID_Pais = str_squish(as.character(ID_Pais))) %>%
   filter(ID_Pais != "") %>%
   distinct(ID_Pais) %>%
+  mutate(ID_Pais = sql_quote(ID_Pais)) %>%
   arrange(ID_Pais)
 
 dim_paises
@@ -467,7 +504,7 @@ dim_centros <- datos %>%
   distinct(centro_recodificado) %>%
   filter(!is.na(centro_recodificado), centro_recodificado != "") %>%
   transmute(
-    ID_Centro = centro_recodificado
+    ID_Centro = sql_quote(centro_recodificado)
   ) %>%
   arrange(ID_Centro)
 
