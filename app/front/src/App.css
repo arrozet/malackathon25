@@ -60,6 +60,18 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  text-decoration: none;
+  transition: color 200ms ease;
+}
+
+.brand:hover {
+  color: #c4b5fd;
+}
+
+.brand:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .brand__spark::after {

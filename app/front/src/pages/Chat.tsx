@@ -52,7 +52,9 @@ export default function Chat(): ReactElement {
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
           </a>
-          <BrainIcon className="chat-header__icon" />
+          <a href="/" className="chat-header__logo-link" aria-label="Brain - Ir al inicio">
+            <BrainIcon className="chat-header__icon" />
+          </a>
           <div className="chat-header__text">
             <h1 className="chat-header__title">Brain AI Assistant</h1>
             <p className="chat-header__subtitle">

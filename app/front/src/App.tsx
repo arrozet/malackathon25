@@ -60,9 +60,9 @@ function App(): ReactElement {
 
       {/* Top navigation bar */}
       <header className="top-bar">
-        <span className="brand" aria-label="Brain, tu compañera de investigación">
+        <a href="/" className="brand" aria-label="Brain, tu compañera de investigación - Ir al inicio">
           Brain<span className="brand__spark" />
-        </span>
+        </a>
         <nav className="nav" aria-label="Secciones principales de Brain">
           {NAV_ITEMS.map((item) => (
             <a key={item.id} href={`#${item.id}`} className="nav__link">
