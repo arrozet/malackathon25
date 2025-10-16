@@ -13,13 +13,11 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - TNS_ADMIN=/app/oracle_wallet
+      - APP_ENV=production
     expose:
       - "8000"
     volumes:
-      # Mount wallet
       - ./app/oracle_wallet:/app/oracle_wallet:ro
-      # Mount source for hot reload (opcional en desarrollo)
-      - ./app/back:/app/app/back:cached
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -46,13 +44,6 @@ services:
     image: malackathon-frontend:latest
     expose:
       - "5173"
-    volumes:
-      # Mount source for hot reload
-      - ./app/front:/app:cached
-      - /app/node_modules
-    depends_on:
-      backend:
-        condition: service_healthy
     restart: unless-stopped
     networks:
       - malackathon-network
@@ -63,7 +54,7 @@ services:
         max-file: "3"
 
   # ============================================
-  # Nginx Reverse Proxy
+  # Nginx Reverse Proxy (PRODUCTION - HTTPS)
   # ============================================
   nginx:
     image: nginx:alpine
@@ -72,9 +63,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      # Por defecto usa nginx-dev.conf para desarrollo local
-      # En producción, deploy.sh copiará nginx-prod.conf a nginx.conf
-      - ./nginx/nginx-dev.conf:/etc/nginx/conf.d/default.conf:ro
+      # Usa nginx-prod.conf directamente en producción
+      - ./nginx/nginx-prod.conf:/etc/nginx/conf.d/default.conf:ro
       - nginx-logs:/var/log/nginx
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /var/www/certbot:/var/www/certbot:ro
@@ -91,6 +81,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
     logging:
       driver: "json-file"
       options:
@@ -98,7 +89,7 @@ services:
         max-file: "3"
 
   # ============================================
-  # Certbot for SSL Certificates
+  # Certbot for SSL renewal
   # ============================================
   certbot:
     image: certbot/certbot:latest
@@ -109,10 +100,21 @@ services:
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     networks:
       - malackathon-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
+# ============================================
+# Networks
+# ============================================
 networks:
   malackathon-network:
     driver: bridge
 
+# ============================================
+# Volumes
+# ============================================
 volumes:
   nginx-logs:
