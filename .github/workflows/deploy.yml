@@ -1,0 +1,86 @@
+name: Deploy to Oracle Cloud
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Permite ejecutar manualmente desde GitHub UI
+
+jobs:
+  deploy:
+    name: Deploy Brain to Production
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          # Configurar SSH key
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          
+          # Agregar host a known_hosts para evitar prompts
+          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+          
+          echo "✓ SSH configurado correctamente"
+      
+      - name: Deploy to Oracle VM
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
+        run: |
+          echo "🚀 Iniciando despliegue en Oracle Cloud..."
+          
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'ENDSSH'
+            set -e
+            
+            echo "📦 Actualizando código desde GitHub..."
+            cd ~/web/malackathon25 || cd /home/$USER/web/malackathon25
+            
+            # Pull latest changes
+            git fetch origin
+            git reset --hard origin/main
+            
+            echo "🔧 Ejecutando script de deploy automático..."
+            chmod +x deploy_auto.sh
+            
+            # Ejecutar deploy automático (pasando el email de certbot)
+            ./deploy_auto.sh $CERTBOT_EMAIL
+            
+            echo "✅ Deploy completado exitosamente"
+          ENDSSH
+          
+          echo "✓ Despliegue completado en Oracle Cloud"
+      
+      - name: Health Check
+        env:
+          DOMAIN: ${{ secrets.DOMAIN }}
+        run: |
+          echo "🏥 Verificando salud de la aplicación..."
+          sleep 10
+          
+          # Verificar endpoint de health
+          if curl -s -f https://$DOMAIN/health > /dev/null; then
+            echo "✅ Aplicación respondiendo correctamente"
+          else
+            echo "⚠️  Advertencia: Health check falló"
+            exit 1
+          fi
+      
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ DEPLOY EXITOSO - Brain está en producción"
+          else
+            echo "❌ DEPLOY FALLIDO - Revisar logs"
+          fi
+
