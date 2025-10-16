@@ -10,6 +10,7 @@ import type { ReactElement } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { ChatMessage as ChatMessageType } from '../types/chat'
+import MermaidRenderer from './MermaidRenderer'
 
 /**
  * Props for the ChatMessage component.
@@ -63,9 +64,19 @@ export default function ChatMessage({ message }: ChatMessageProps): ReactElement
               components={{
                 // Ensure links open in new tab for security
                 a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
-                // Ensure code blocks have proper styling
+                // Render Mermaid diagrams and code blocks
                 code: ({ node, className, children, ...props }) => {
+                  const match = /language-(\w+)/.exec(className || '')
+                  const language = match ? match[1] : null
                   const inline = !className
+                  
+                  // Render Mermaid diagrams
+                  if (language === 'mermaid' && !inline) {
+                    const code = String(children).replace(/\n$/, '')
+                    return <MermaidRenderer chart={code} />
+                  }
+                  
+                  // Render other code blocks
                   return inline ? (
                     <code className="inline-code" {...props}>{children}</code>
                   ) : (

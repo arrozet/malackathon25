@@ -752,6 +752,160 @@
 }
 
 /* =====================================================================
+   Mermaid Diagrams
+   ===================================================================== */
+
+.mermaid-diagram {
+  margin: 1rem 0;
+  padding: 1.5rem;
+  background: rgba(13, 12, 29, 0.6);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 0.75rem;
+  overflow-x: auto;
+}
+
+.mermaid-diagram:first-child {
+  margin-top: 0;
+}
+
+.mermaid-diagram:last-child {
+  margin-bottom: 0;
+}
+
+.mermaid-diagram__content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.mermaid-diagram__content svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mermaid Loading State */
+.mermaid-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  margin: 1rem 0;
+  background: rgba(124, 58, 237, 0.05);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: 0.75rem;
+}
+
+.mermaid-loading__spinner {
+  width: 3rem;
+  height: 3rem;
+  color: #7C3AED;
+  animation: spin 1s linear infinite;
+}
+
+.mermaid-loading__spinner svg {
+  width: 100%;
+  height: 100%;
+}
+
+.mermaid-loading__text {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+}
+
+/* Mermaid Error State */
+.mermaid-error {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.75rem;
+  color: #FCA5A5;
+}
+
+.mermaid-error__icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.mermaid-error__content {
+  flex: 1;
+}
+
+.mermaid-error__title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #FCA5A5;
+}
+
+.mermaid-error__message {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  color: #FCA5A5;
+  opacity: 0.9;
+}
+
+.mermaid-error__details {
+  margin-top: 0.75rem;
+}
+
+.mermaid-error__details summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #FCA5A5;
+  user-select: none;
+  padding: 0.25rem 0;
+}
+
+.mermaid-error__details summary:hover {
+  text-decoration: underline;
+}
+
+.mermaid-error__code {
+  margin: 0.5rem 0 0 0;
+  padding: 0.75rem;
+  background: rgba(13, 12, 29, 0.8);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.mermaid-error__code code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #E9D5FF;
+}
+
+/* Override default mermaid styles to match Brain theme */
+.mermaid-diagram .node rect,
+.mermaid-diagram .node circle,
+.mermaid-diagram .node ellipse,
+.mermaid-diagram .node polygon,
+.mermaid-diagram .node path {
+  stroke: #A855F7 !important;
+  stroke-width: 2px !important;
+}
+
+.mermaid-diagram .edgePath .path {
+  stroke: #A855F7 !important;
+  stroke-width: 2px !important;
+}
+
+.mermaid-diagram .label {
+  color: #E5E7EB !important;
+}
+
+.mermaid-diagram .arrowheadPath {
+  fill: #A855F7 !important;
+}
+
+/* =====================================================================
    Thinking Chain (Progress Indicator)
    ===================================================================== */
 
