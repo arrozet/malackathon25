@@ -23,7 +23,16 @@ from app.back.db import (
     get_pool_status,
     get_connection,
 )
-from app.back.schemas import InsightSummary
+from app.back.schemas import (
+    InsightSummary,
+    DataVisualization,
+    CategoryDistribution,
+    AgeDistribution,
+    TimeSeriesData,
+    GenderDistribution,
+    StayDistribution,
+    DataFilters,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -511,6 +520,315 @@ async def get_db_pool_status() -> Dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get pool status: {str(e)}"
+        )
+
+
+def _build_where_clause(filters: DataFilters) -> tuple[str, dict]:
+    """
+    Build SQL WHERE clause from filter parameters.
+    
+    Args:
+        filters (DataFilters): Filter parameters from the request.
+    
+    Returns:
+        tuple: WHERE clause string and parameters dictionary.
+    """
+    conditions = []
+    params = {}
+    
+    if filters.start_date:
+        conditions.append("FECHA_DE_INGRESO >= TO_DATE(:start_date, 'YYYY-MM-DD')")
+        params['start_date'] = filters.start_date
+    
+    if filters.end_date:
+        conditions.append("FECHA_DE_INGRESO <= TO_DATE(:end_date, 'YYYY-MM-DD')")
+        params['end_date'] = filters.end_date
+    
+    if filters.gender is not None:
+        conditions.append("SEXO = :gender")
+        params['gender'] = filters.gender
+    
+    if filters.age_min is not None:
+        conditions.append("EDAD >= :age_min")
+        params['age_min'] = filters.age_min
+    
+    if filters.age_max is not None:
+        conditions.append("EDAD <= :age_max")
+        params['age_max'] = filters.age_max
+    
+    if filters.category:
+        conditions.append('"Categoría" = :category')
+        params['category'] = filters.category
+    
+    if filters.readmission is not None:
+        conditions.append("REINGRESO = :readmission")
+        params['readmission'] = 'S' if filters.readmission else 'N'
+    
+    where_clause = " AND ".join(conditions) if conditions else "1=1"
+    return where_clause, params
+
+
+@app.get("/data/visualization", response_model=DataVisualization)
+async def get_data_visualization(
+    start_date: str | None = None,
+    end_date: str | None = None,
+    gender: int | None = None,
+    age_min: int | None = None,
+    age_max: int | None = None,
+    category: str | None = None,
+    readmission: bool | None = None,
+) -> DataVisualization:
+    """
+    Get aggregated data for visualization with optional filters.
+    
+    This endpoint returns data structured for multiple chart types,
+    including category distributions, age groups, time series, and more.
+    
+    Args:
+        start_date (str, optional): Start date filter (YYYY-MM-DD).
+        end_date (str, optional): End date filter (YYYY-MM-DD).
+        gender (int, optional): Gender filter (1=male, 2=female).
+        age_min (int, optional): Minimum age filter.
+        age_max (int, optional): Maximum age filter.
+        category (str, optional): Diagnostic category filter.
+        readmission (bool, optional): Readmission status filter.
+    
+    Returns:
+        DataVisualization: Complete visualization data with all distributions.
+    
+    Raises:
+        HTTPException: If database connection fails or query errors occur.
+    """
+    
+    # Check database connectivity
+    if not test_connection():
+        raise HTTPException(
+            status_code=503,
+            detail="Database connection unavailable"
+        )
+    
+    # Build filters object
+    filters = DataFilters(
+        start_date=start_date,
+        end_date=end_date,
+        gender=gender,
+        age_min=age_min,
+        age_max=age_max,
+        category=category,
+        readmission=readmission,
+    )
+    
+    where_clause, params = _build_where_clause(filters)
+    
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Total records matching filters
+            query = f"SELECT COUNT(*) FROM SALUDMENTAL WHERE {where_clause}"
+            cursor.execute(query, params)
+            total_records = _to_int(cursor.fetchone()[0])
+            
+            # Category distribution
+            query = f'''
+                SELECT "Categoría", COUNT(*) as cnt
+                FROM SALUDMENTAL
+                WHERE {where_clause} AND "Categoría" IS NOT NULL
+                GROUP BY "Categoría"
+                ORDER BY cnt DESC
+            '''
+            cursor.execute(query, params)
+            categories = []
+            for row in cursor.fetchall():
+                cat_name, count = row
+                categories.append(CategoryDistribution(
+                    category=cat_name,
+                    count=_to_int(count),
+                    percentage=round((_to_int(count) / total_records * 100), 2) if total_records > 0 else 0
+                ))
+            
+            # Age distribution
+            query = f'''
+                SELECT 
+                    CASE 
+                        WHEN EDAD < 18 THEN '< 18'
+                        WHEN EDAD BETWEEN 18 AND 29 THEN '18-29'
+                        WHEN EDAD BETWEEN 30 AND 39 THEN '30-39'
+                        WHEN EDAD BETWEEN 40 AND 49 THEN '40-49'
+                        WHEN EDAD BETWEEN 50 AND 59 THEN '50-59'
+                        WHEN EDAD BETWEEN 60 AND 69 THEN '60-69'
+                        WHEN EDAD >= 70 THEN '70+'
+                        ELSE 'Desconocido'
+                    END as age_group,
+                    COUNT(*) as cnt
+                FROM SALUDMENTAL
+                WHERE {where_clause}
+                GROUP BY 
+                    CASE 
+                        WHEN EDAD < 18 THEN '< 18'
+                        WHEN EDAD BETWEEN 18 AND 29 THEN '18-29'
+                        WHEN EDAD BETWEEN 30 AND 39 THEN '30-39'
+                        WHEN EDAD BETWEEN 40 AND 49 THEN '40-49'
+                        WHEN EDAD BETWEEN 50 AND 59 THEN '50-59'
+                        WHEN EDAD BETWEEN 60 AND 69 THEN '60-69'
+                        WHEN EDAD >= 70 THEN '70+'
+                        ELSE 'Desconocido'
+                    END
+                ORDER BY age_group
+            '''
+            cursor.execute(query, params)
+            age_groups = []
+            for row in cursor.fetchall():
+                age_group, count = row
+                age_groups.append(AgeDistribution(
+                    age_group=age_group,
+                    count=_to_int(count),
+                    percentage=round((_to_int(count) / total_records * 100), 2) if total_records > 0 else 0
+                ))
+            
+            # Time series (by month)
+            query = f'''
+                SELECT 
+                    TO_CHAR(FECHA_DE_INGRESO, 'YYYY-MM') as period,
+                    COUNT(*) as cnt
+                FROM SALUDMENTAL
+                WHERE {where_clause} AND FECHA_DE_INGRESO IS NOT NULL
+                GROUP BY TO_CHAR(FECHA_DE_INGRESO, 'YYYY-MM')
+                ORDER BY period
+            '''
+            cursor.execute(query, params)
+            time_series = []
+            for row in cursor.fetchall():
+                period, count = row
+                time_series.append(TimeSeriesData(
+                    period=period,
+                    count=_to_int(count)
+                ))
+            
+            # Gender distribution
+            query = f'''
+                SELECT 
+                    CASE 
+                        WHEN SEXO = 1 THEN 'Hombre'
+                        WHEN SEXO = 2 THEN 'Mujer'
+                        ELSE 'Desconocido'
+                    END as gender_label,
+                    COUNT(*) as cnt
+                FROM SALUDMENTAL
+                WHERE {where_clause}
+                GROUP BY SEXO
+                ORDER BY SEXO
+            '''
+            cursor.execute(query, params)
+            gender_distribution = []
+            for row in cursor.fetchall():
+                gender_label, count = row
+                gender_distribution.append(GenderDistribution(
+                    gender=gender_label,
+                    count=_to_int(count),
+                    percentage=round((_to_int(count) / total_records * 100), 2) if total_records > 0 else 0
+                ))
+            
+            # Stay distribution
+            query = f'''
+                SELECT 
+                    CASE 
+                        WHEN "Estancia Días" < 3 THEN '< 3 días'
+                        WHEN "Estancia Días" BETWEEN 3 AND 7 THEN '3-7 días'
+                        WHEN "Estancia Días" BETWEEN 8 AND 14 THEN '8-14 días'
+                        WHEN "Estancia Días" BETWEEN 15 AND 30 THEN '15-30 días'
+                        WHEN "Estancia Días" > 30 THEN '> 30 días'
+                        ELSE 'Desconocido'
+                    END as stay_range,
+                    COUNT(*) as cnt
+                FROM SALUDMENTAL
+                WHERE {where_clause}
+                GROUP BY 
+                    CASE 
+                        WHEN "Estancia Días" < 3 THEN '< 3 días'
+                        WHEN "Estancia Días" BETWEEN 3 AND 7 THEN '3-7 días'
+                        WHEN "Estancia Días" BETWEEN 8 AND 14 THEN '8-14 días'
+                        WHEN "Estancia Días" BETWEEN 15 AND 30 THEN '15-30 días'
+                        WHEN "Estancia Días" > 30 THEN '> 30 días'
+                        ELSE 'Desconocido'
+                    END
+                ORDER BY stay_range
+            '''
+            cursor.execute(query, params)
+            stay_distribution = []
+            for row in cursor.fetchall():
+                stay_range, count = row
+                stay_distribution.append(StayDistribution(
+                    stay_range=stay_range,
+                    count=_to_int(count),
+                    percentage=round((_to_int(count) / total_records * 100), 2) if total_records > 0 else 0
+                ))
+            
+            cursor.close()
+            
+            return DataVisualization(
+                total_records=total_records,
+                categories=categories,
+                age_groups=age_groups,
+                time_series=time_series,
+                gender_distribution=gender_distribution,
+                stay_distribution=stay_distribution,
+                filters_applied=filters,
+            )
+            
+    except Exception as e:
+        logger.error(f"Failed to retrieve visualization data: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve visualization data: {str(e)}"
+        )
+
+
+@app.get("/data/categories")
+async def get_categories() -> Dict[str, Any]:
+    """
+    Get list of all available diagnostic categories.
+    
+    This endpoint returns unique category values for use in filter dropdowns.
+    
+    Returns:
+        dict: List of available categories.
+    
+    Raises:
+        HTTPException: If database connection fails or query errors occur.
+    """
+    
+    if not test_connection():
+        raise HTTPException(
+            status_code=503,
+            detail="Database connection unavailable"
+        )
+    
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            
+            query = '''
+                SELECT DISTINCT "Categoría"
+                FROM SALUDMENTAL
+                WHERE "Categoría" IS NOT NULL
+                ORDER BY "Categoría"
+            '''
+            cursor.execute(query)
+            
+            categories = [row[0] for row in cursor.fetchall()]
+            cursor.close()
+            
+            return {
+                "categories": categories,
+                "total": len(categories)
+            }
+            
+    except Exception as e:
+        logger.error(f"Failed to retrieve categories: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve categories: {str(e)}"
         )
 
 

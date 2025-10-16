@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactElement } from 'react'
 import BrainIcon from './components/BrainIcon'
 import LayoutSection from './components/LayoutSection'
+import DataExplorer from './pages/DataExplorer'
 import './App.css'
 
 type InsightMetric = {
@@ -30,6 +31,7 @@ const API_BASE_URL = '/api'
 const NAV_ITEMS = [
   { id: 'vision', label: 'Visión general' },
   { id: 'insights', label: 'Insights clave' },
+  { id: 'explorer', label: 'Exploración de datos' },
   { id: 'roadmap', label: 'Proyección' },
 ]
 
@@ -164,6 +166,14 @@ function App(): ReactElement {
               ))}
             </section>
           )}
+        </LayoutSection>
+
+        <LayoutSection
+          id="explorer"
+          title="Exploración interactiva de datos"
+          description="Herramientas de análisis visual con filtrado dinámico para profundizar en las admisiones de salud mental."
+        >
+          <DataExplorer />
         </LayoutSection>
 
         <LayoutSection
