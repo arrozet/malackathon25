@@ -60,16 +60,26 @@ export default function DataFilters({ onFiltersChange, filters }: DataFiltersPro
 
   return (
     <div className="filters-panel">
+      {/* 
+        ACCESIBILIDAD: Botón con texto descriptivo sin aria-label redundante.
+        El texto "Limpiar filtros" es suficientemente claro.
+        REFERENCIA: ARIA in HTML - Don't use redundant ARIA
+      */}
       <div className="filters-header">
         <h3>Filtros de datos</h3>
-        <button type="button" className="btn-reset" onClick={handleReset} aria-label="Limpiar todos los filtros">
+        <button type="button" className="btn-reset" onClick={handleReset}>
           Limpiar filtros
         </button>
       </div>
 
+      {/* 
+        ACCESIBILIDAD: Formulario con agrupaciones semánticas claras.
+        Leyendas visibles para mejorar comprensión de grupos de campos.
+        REFERENCIA: WCAG 2.1 - 3.3.2 Labels or Instructions (Level A)
+      */}
       <form>
         <fieldset>
-          <legend className="sr-only">Rango de fechas</legend>
+          <legend>Rango de fechas</legend>
           <div className="filter-group">
             <label htmlFor="filter-start-date">Fecha inicio</label>
             <input
@@ -99,7 +109,7 @@ export default function DataFilters({ onFiltersChange, filters }: DataFiltersPro
         </fieldset>
 
         <fieldset>
-          <legend className="sr-only">Características demográficas</legend>
+          <legend>Características demográficas</legend>
           <div className="filter-group">
             <label htmlFor="filter-gender">Género</label>
             <select
@@ -149,7 +159,7 @@ export default function DataFilters({ onFiltersChange, filters }: DataFiltersPro
         </fieldset>
 
         <fieldset>
-          <legend className="sr-only">Características clínicas</legend>
+          <legend>Características clínicas</legend>
           <div className="filter-group">
             <label htmlFor="filter-category">Categoría diagnóstica</label>
             <select

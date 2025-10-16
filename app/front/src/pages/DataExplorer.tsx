@@ -42,23 +42,36 @@ export default function DataExplorer(): ReactElement {
   return (
     <div className="explorer-page">
       {/* Page header */}
-      <div className="explorer-header">
-        <h2>Exploración de datos</h2>
+      {/* 
+        ACCESIBILIDAD: <h1> como título principal de la página.
+        Cada vista debe tener un único h1 que identifique el contenido principal.
+        REFERENCIA: WCAG 2.1 - 2.4.6 Headings and Labels (Level AA)
+      */}
+      <header className="explorer-header">
+        <h1>Exploración de datos</h1>
         <p className="explorer-subtitle">
           Filtra y visualiza los datos de admisiones de salud mental. Los gráficos se actualizan
           en tiempo real según los filtros aplicados.
         </p>
-      </div>
+      </header>
 
       {/* Main explorer layout */}
       <div className="explorer-layout">
-        {/* Filters sidebar */}
-        <aside className="explorer-sidebar" role="complementary" aria-label="Panel de filtros de datos">
+        {/* 
+          ACCESIBILIDAD: <aside> sin role redundante.
+          El elemento <aside> ya tiene semántica implícita de complementary.
+          REFERENCIA: WCAG 2.1 - 4.1.2 Name, Role, Value (Level A)
+        */}
+        <aside className="explorer-sidebar" aria-label="Panel de filtros de datos">
           <DataFilters filters={filters} onFiltersChange={handleFiltersChange} />
         </aside>
 
-        {/* Main content area with charts */}
-        <main className="explorer-content" aria-label="Área de visualización de datos">
+        {/* 
+          ACCESIBILIDAD: Uso de <div> en lugar de <main>.
+          Solo debe haber un único <main> por página (definido en App.tsx).
+          REFERENCIA: HTML5 Spec - The main element
+        */}
+        <div className="explorer-content" aria-label="Área de visualización de datos">
           {/* Loading state */}
           {loading && (
             <div className="status-message" role="status" aria-live="polite" aria-busy="true">
@@ -97,7 +110,7 @@ export default function DataExplorer(): ReactElement {
               )}
             </>
           )}
-        </main>
+        </div>
       </div>
     </div>
   )

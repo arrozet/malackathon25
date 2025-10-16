@@ -127,9 +127,24 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
         </div>
       </div>
 
-      {/* Category distribution bar chart */}
-      <div className="chart-card" role="img" aria-label={`Gráfico de barras mostrando distribución de admisiones por categoría diagnóstica. Total de ${data.categories.length} categorías representadas.`}>
-        <h4 className="chart-title" id="chart-categories-title">Distribución por categoría diagnóstica</h4>
+      {/* 
+        ACCESIBILIDAD: Gráfico con role="img" y descripción detallada.
+        Se usa h3 para mantener jerarquía correcta (h1 > h2 > h3).
+        Se incluye aria-describedby para descripción accesible extendida.
+        REFERENCIA: WCAG 2.1 - 1.1.1 Non-text Content (Level A)
+      */}
+      <div 
+        className="chart-card" 
+        role="img" 
+        aria-labelledby="chart-categories-title"
+        aria-describedby="chart-categories-desc"
+      >
+        <h3 className="chart-title" id="chart-categories-title">Distribución por categoría diagnóstica</h3>
+        <p id="chart-categories-desc" className="sr-only">
+          Gráfico de barras horizontal mostrando la distribución de {data.total_records} admisiones 
+          clasificadas en {data.categories.length} categorías diagnósticas diferentes. Cada barra 
+          representa el número total de admisiones para esa categoría específica.
+        </p>
         <ResponsiveContainer width="100%" height={isMobile ? 600 : 500} aria-labelledby="chart-categories-title">
           <BarChart 
             data={data.categories} 
@@ -156,9 +171,19 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
         </ResponsiveContainer>
       </div>
 
-      {/* Time series line chart */}
-      <div className="chart-card" role="img" aria-label={`Gráfico de líneas mostrando la evolución temporal de admisiones. Presenta ${data.time_series.length} períodos de tiempo.`}>
-        <h4 className="chart-title" id="chart-timeseries-title">Evolución temporal de admisiones</h4>
+      {/* ACCESIBILIDAD: Gráfico de evolución temporal con descripción semántica */}
+      <div 
+        className="chart-card" 
+        role="img" 
+        aria-labelledby="chart-timeseries-title"
+        aria-describedby="chart-timeseries-desc"
+      >
+        <h3 className="chart-title" id="chart-timeseries-title">Evolución temporal de admisiones</h3>
+        <p id="chart-timeseries-desc" className="sr-only">
+          Gráfico de líneas que muestra la evolución temporal del número de admisiones a lo largo de 
+          {data.time_series.length} períodos de tiempo. Permite identificar tendencias y patrones 
+          estacionales en las admisiones hospitalarias de salud mental.
+        </p>
         <ResponsiveContainer width="100%" height={400} aria-labelledby="chart-timeseries-title">
           <LineChart
             data={data.time_series}
@@ -182,9 +207,20 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
         </ResponsiveContainer>
       </div>
 
-      {/* Gender distribution pie chart */}
-      <div className="chart-card" role="img" aria-label={`Gráfico circular mostrando distribución por género. ${data.gender_distribution.map(g => `${g.gender}: ${g.percentage.toFixed(1)}%`).join(', ')}`}>
-        <h4 className="chart-title" id="chart-gender-title">Distribución por género</h4>
+      {/* ACCESIBILIDAD: Gráfico circular con patrones para daltonismo */}
+      <div 
+        className="chart-card" 
+        role="img" 
+        aria-labelledby="chart-gender-title"
+        aria-describedby="chart-gender-desc"
+      >
+        <h3 className="chart-title" id="chart-gender-title">Distribución por género</h3>
+        <p id="chart-gender-desc" className="sr-only">
+          Gráfico circular mostrando la distribución de admisiones por género: 
+          {data.gender_distribution.map(g => `${g.gender} representa ${g.percentage.toFixed(1)}% con ${g.count} admisiones`).join(', ')}. 
+          Los sectores usan patrones visuales (líneas y puntos) además de colores para facilitar 
+          la distinción a personas con daltonismo.
+        </p>
         <ResponsiveContainer width="100%" height={400} aria-labelledby="chart-gender-title">
           <PieChart>
             {/* SVG pattern definitions for accessibility - allows color-blind users to distinguish sectors */}
@@ -262,9 +298,19 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
         </ResponsiveContainer>
       </div>
 
-      {/* Age distribution bar chart */}
-      <div className="chart-card" role="img" aria-label={`Gráfico de barras mostrando distribución por grupos de edad. Total de ${data.age_groups.length} grupos etarios.`}>
-        <h4 className="chart-title" id="chart-age-title">Distribución por grupos de edad</h4>
+      {/* ACCESIBILIDAD: Gráfico de distribución etaria */}
+      <div 
+        className="chart-card" 
+        role="img" 
+        aria-labelledby="chart-age-title"
+        aria-describedby="chart-age-desc"
+      >
+        <h3 className="chart-title" id="chart-age-title">Distribución por grupos de edad</h3>
+        <p id="chart-age-desc" className="sr-only">
+          Gráfico de barras verticales mostrando la distribución de admisiones clasificadas en 
+          {data.age_groups.length} grupos de edad diferentes. Permite identificar qué rangos etarios 
+          tienen mayor incidencia de admisiones hospitalarias en salud mental.
+        </p>
         <ResponsiveContainer width="100%" height={400} aria-labelledby="chart-age-title">
           <BarChart data={data.age_groups} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
@@ -277,9 +323,19 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
         </ResponsiveContainer>
       </div>
 
-      {/* Stay distribution bar chart */}
-      <div className="chart-card" role="img" aria-label={`Gráfico de barras mostrando distribución de duración de estancia hospitalaria. Total de ${data.stay_distribution.length} rangos de duración.`}>
-        <h4 className="chart-title" id="chart-stay-title">Distribución de duración de estancia</h4>
+      {/* ACCESIBILIDAD: Gráfico de duración de estancia */}
+      <div 
+        className="chart-card" 
+        role="img" 
+        aria-labelledby="chart-stay-title"
+        aria-describedby="chart-stay-desc"
+      >
+        <h3 className="chart-title" id="chart-stay-title">Distribución de duración de estancia</h3>
+        <p id="chart-stay-desc" className="sr-only">
+          Gráfico de barras mostrando la distribución de la duración de estancia hospitalaria clasificada 
+          en {data.stay_distribution.length} rangos diferentes. Ayuda a identificar la duración típica de 
+          las hospitalizaciones y detectar estancias prolongadas que puedan requerir atención especial.
+        </p>
         <ResponsiveContainer width="100%" height={400} aria-labelledby="chart-stay-title">
           <BarChart
             data={data.stay_distribution}

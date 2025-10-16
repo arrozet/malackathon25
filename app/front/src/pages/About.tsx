@@ -17,14 +17,23 @@ import '../styles/About.css'
 export default function About(): ReactElement {
   return (
     <div className="about-page">
-      {/* Navigation back to home */}
+      {/* 
+        ACCESIBILIDAD: Navegación de retorno sin aria-label redundante.
+        El texto visible es suficientemente descriptivo.
+        REFERENCIA: ARIA in HTML - Don't use redundant ARIA
+      */}
       <header className="about-header">
-        <a href="/" className="back-link" aria-label="Regresar a la página principal">
+        <a href="/" className="back-link">
           ← Volver al inicio
         </a>
       </header>
 
-      <main className="about-main" role="main">
+      {/* 
+        ACCESIBILIDAD: Uso de <main> semántico sin role redundante.
+        El elemento <main> ya tiene semántica implícita de landmark principal.
+        REFERENCIA: WCAG 2.1 - 1.3.1 Info and Relationships (Level A)
+      */}
+      <main className="about-main">
         {/* Hero section */}
         <section className="about-hero" aria-labelledby="about-title">
           <div className="about-hero-icon" aria-hidden="true">
@@ -106,14 +115,18 @@ export default function About(): ReactElement {
             <h2 id="about-contact">Contáctanos</h2>
             <p>
               ¿Interesado en Brain o en nuestras otras soluciones? Visítanos en{' '}
+              {/* 
+                ACCESIBILIDAD: Enlace externo con indicador visual y textual.
+                Se elimina aria-label redundante - el contexto es claro.
+                REFERENCIA: ARIA in HTML - Don't use redundant ARIA
+              */}
               <a 
                 href="https://dr-artificial.com" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="about-link"
-                aria-label="Visitar sitio web de Dr. Artificial (se abre en nueva ventana)"
               >
-                dr-artificial.com
+                dr-artificial.com <span aria-label="se abre en nueva ventana">↗</span>
               </a>
             </p>
             <p className="contact-note">

@@ -1,3 +1,28 @@
+/* 
+  ACCESIBILIDAD: Skip link oculto por defecto, visible al recibir foco.
+  Permite a usuarios de teclado saltar navegación repetitiva.
+  REFERENCIA: WCAG 2.1 - 2.4.1 Bypass Blocks (Level A)
+*/
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #7c3aed;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  z-index: 100;
+  border-radius: 0 0 8px 0;
+  font-weight: 600;
+  transition: top 0.3s ease;
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
 .page {
   display: flex;
   flex-direction: column;
@@ -54,17 +79,23 @@
   flex-wrap: wrap;
 }
 
+/* 
+  ACCESIBILIDAD: Área táctil mínima de 44x44px para cumplir WCAG.
+  Ajuste de padding para garantizar tamaño mínimo recomendado.
+  REFERENCIA: WCAG 2.1 - 2.5.5 Target Size (Level AAA, recomendado para móviles)
+*/
 .nav__link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.55rem 0.95rem;
+  padding: 0.75rem 1.1rem; /* Incrementado para asegurar 44x44px mínimo */
   border-radius: 999px;
   border: 1px solid transparent;
   color: #c4b5fd;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
   transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  min-height: 44px; /* Altura mínima táctil */
 }
 
 .nav__link:hover,
@@ -128,11 +159,16 @@
   gap: 0.75rem;
 }
 
+/* 
+  ACCESIBILIDAD: Badge con contraste de color adecuado.
+  El color #c4b5fd sobre fondo semi-transparente oscuro cumple WCAG AA.
+  REFERENCIA: WCAG 2.1 - 1.4.3 Contrast (Minimum) Level AA
+*/
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.4rem 0.9rem;
+  padding: 0.5rem 1rem; /* Ajustado para legibilidad */
   border-radius: 999px;
   border: 1px solid rgba(124, 58, 237, 0.55);
   background: rgba(124, 58, 237, 0.12);
@@ -140,6 +176,7 @@
   font-size: 0.85rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  font-weight: 500; /* Añadido para mejorar legibilidad */
 }
 
 .badge--ok {
@@ -262,9 +299,14 @@ h1 {
   transition: border-color 200ms ease, transform 200ms ease;
 }
 
+/* 
+  ACCESIBILIDAD: Efecto hover en tarjetas con transición suave.
+  La animación se desactiva automáticamente con prefers-reduced-motion.
+*/
 .card:hover {
   transform: translateY(-6px);
   border-color: rgba(124, 58, 237, 0.45);
+  transition: all 0.2s ease;
 }
 
 .card__header {
@@ -274,7 +316,13 @@ h1 {
   gap: 0.75rem;
 }
 
-.card__header h3 {
+/* 
+  ACCESIBILIDAD: Corrección de jerarquía de encabezados.
+  Se cambió de h3 a h2 ya que las tarjetas están dentro de <section>
+  con h2 como nivel superior (Insights clave).
+  REFERENCIA: WCAG 2.1 - 1.3.1 Info and Relationships (Level A)
+*/
+.card__header h2 {
   font-size: 1.25rem;
   margin: 0;
   color: #f8fafc;

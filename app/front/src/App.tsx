@@ -49,6 +49,15 @@ function App(): ReactElement {
 
   return (
     <div className="page">
+      {/* 
+        ACCESIBILIDAD: Skip link para navegación por teclado.
+        Permite a usuarios de teclado/lectores de pantalla saltar directamente al contenido.
+        REFERENCIA: WCAG 2.1 - 2.4.1 Bypass Blocks (Level A)
+      */}
+      <a href="#main-content" className="skip-link">
+        Saltar al contenido principal
+      </a>
+
       {/* Top navigation bar */}
       <header className="top-bar">
         <span className="brand" aria-label="Brain, tu compañera de investigación">
@@ -64,7 +73,11 @@ function App(): ReactElement {
       </header>
 
       {/* Main content area */}
-      <main className="content">
+      {/* 
+        ACCESIBILIDAD: Identificador para skip link.
+        El id permite que el skip link enfoque directamente el contenido principal.
+      */}
+      <main id="main-content" className="content">
         {/* Hero section with Brain icon and highlights */}
         <section className="hero" id="vision">
           <div className="hero__visual" aria-hidden="true">
