@@ -1,0 +1,243 @@
+/**
+ * About Page Styles
+ * 
+ * Styling for the standalone About page with consistent Brain design system.
+ */
+
+.about-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, rgba(30, 18, 62, 0.65), rgba(12, 11, 24, 0.95) 50%),
+    linear-gradient(160deg, rgba(12, 11, 24, 0.9), #090817 70%);
+  color: #e5e7eb;
+  font-family: 'Inter', 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 2rem clamp(1.5rem, 5vw, 5rem) 3rem;
+}
+
+/* Header */
+.about-header {
+  margin-bottom: 3rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #a855f7;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  background: rgba(13, 12, 29, 0.55);
+  backdrop-filter: blur(12px);
+}
+
+.back-link:hover {
+  color: #c4b5fd;
+  border-color: rgba(124, 58, 237, 0.4);
+  background: rgba(30, 28, 47, 0.6);
+}
+
+/* Main content */
+.about-main {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Hero section */
+.about-hero {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.about-hero-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.hero-brain-icon {
+  width: 120px;
+  height: 120px;
+  filter: drop-shadow(0 0 30px rgba(124, 58, 237, 0.4));
+}
+
+.about-hero h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  margin: 0 0 1rem;
+  background: linear-gradient(135deg, #f8fafc, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.about-tagline {
+  font-size: 1.15rem;
+  color: #c4b5fd;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Content sections */
+.about-section {
+  display: grid;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.about-card {
+  padding: 2rem;
+  border-radius: 20px;
+  background: rgba(30, 28, 47, 0.8);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  backdrop-filter: blur(6px);
+}
+
+.about-card:hover {
+  background: rgba(42, 38, 65, 0.65);
+  border-color: rgba(124, 58, 237, 0.3);
+  transform: translateY(-2px);
+}
+
+.about-card--highlight {
+  border-color: rgba(124, 58, 237, 0.3);
+  background: rgba(42, 38, 65, 0.7);
+}
+
+.about-card h2 {
+  margin: 0 0 1.25rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #f8fafc;
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.about-card p {
+  margin: 0 0 1rem;
+  line-height: 1.7;
+  color: #dcd7ff;
+  font-size: 1rem;
+}
+
+.about-card p:last-child {
+  margin-bottom: 0;
+}
+
+.about-link {
+  color: #a855f7;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.about-link:hover {
+  color: #c4b5fd;
+  border-bottom-color: rgba(196, 181, 253, 0.5);
+}
+
+/* Tech list */
+.tech-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.tech-list li {
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.6;
+  color: #dcd7ff;
+}
+
+.tech-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: #7c3aed;
+  font-weight: bold;
+}
+
+.tech-list strong {
+  color: #f8fafc;
+}
+
+/* Contact note */
+.contact-note {
+  font-size: 0.95rem;
+  color: #c4b5fd;
+  font-style: italic;
+}
+
+/* Credit section */
+.about-credit {
+  text-align: center;
+  padding: 2rem 1rem;
+  border-top: 1px solid rgba(124, 58, 237, 0.2);
+  margin-top: 2rem;
+}
+
+.about-credit p {
+  margin: 0;
+  color: #9ca3c7;
+}
+
+.about-credit strong {
+  color: #a855f7;
+}
+
+/* Footer */
+.about-footer {
+  text-align: center;
+  padding-top: 2rem;
+  margin-top: 3rem;
+  border-top: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.about-footer small {
+  font-size: 0.85rem;
+  color: #a5b4fc;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .about-page {
+    padding: 1.5rem 1.25rem 2rem;
+  }
+
+  .about-hero {
+    margin-bottom: 3rem;
+  }
+
+  .hero-brain-icon {
+    width: 90px;
+    height: 90px;
+  }
+
+  .about-hero h1 {
+    font-size: 2rem;
+  }
+
+  .about-tagline {
+    font-size: 1rem;
+  }
+
+  .about-card {
+    padding: 1.5rem;
+  }
+
+  .about-card h2 {
+    font-size: 1.3rem;
+  }
+}
+

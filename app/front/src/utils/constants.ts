@@ -12,7 +12,6 @@ export const NAV_ITEMS = [
   { id: 'vision', label: 'Visión general' },
   { id: 'insights', label: 'Insights clave' },
   { id: 'explorer', label: 'Exploración de datos' },
-  { id: 'roadmap', label: 'Proyección' },
 ] as const
 
 /**

@@ -144,35 +144,31 @@ function App(): ReactElement {
           <DataExplorer />
         </LayoutSection>
 
-        {/* Roadmap section */}
-        <LayoutSection
-          id="roadmap"
-          title="Próxima iteración"
-          description="Trazamos la hoja de ruta para llegar a la versión evaluable por el jurado del Malackathon."
-        >
-          <ul className="roadmap">
-            <li>
-              <strong>Conexión segura Oracle:</strong> Implementar wallet OCI y rotación de
-              credenciales en despliegues Docker.
-            </li>
-            <li>
-              <strong>Panel comparativo:</strong> Añadir gráficos longitudinales de readmisiones y
-              segmentación por unidades clínicas.
-            </li>
-            <li>
-              <strong>Alertas personalizadas:</strong> Definir reglas de negocio exportables para
-              equipos multidisciplinares.
-            </li>
-          </ul>
-        </LayoutSection>
       </main>
 
       {/* Footer */}
       <footer className="footer">
-        <small>
-          Prototipo Malackathon 2025 · Generado{' '}
-          {insights ? formatDateTime(insights.generated_at) : 'sin conexión'}
-        </small>
+        <div className="footer-content">
+          <small>
+            © 2025 Dr. Artificial · Prototipo Malackathon 2025
+          </small>
+          <nav className="footer-nav" aria-label="Enlaces del pie de página">
+            <a href="/about" className="footer-link">Acerca de</a>
+            <span className="footer-separator">·</span>
+            <a 
+              href="https://dr-artificial.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="footer-link"
+            >
+              Sitio web
+            </a>
+            <span className="footer-separator">·</span>
+            <small className="footer-timestamp">
+              {insights ? formatDateTime(insights.generated_at) : 'sin conexión'}
+            </small>
+          </nav>
+        </div>
       </footer>
     </div>
   )
