@@ -313,7 +313,7 @@ GitHub → Actions → Deploy to Oracle Cloud → Run workflow
 
 # O desde la VM
 ssh ubuntu@<IP>
-cd ~/malackathon25
+cd ~/web/malackathon25
 ./deploy.sh
 ```
 

@@ -37,17 +37,17 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
         run: |
-          echo "🚀 Iniciando despliegue en Oracle Cloud..."
-          
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'ENDSSH'
-            set -e
+            echo "🚀 Iniciando despliegue en Oracle Cloud..."
             
-            echo "📦 Actualizando código desde GitHub..."
-            cd ~/malackathon25 || cd /home/$USER/malackathon25
-            
-            # Pull latest changes
-            git fetch origin
-            git reset --hard origin/main
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'ENDSSH'
+              set -e
+              
+              echo "📦 Actualizando código desde GitHub..."
+              cd ~/web/malackathon25 || cd /home/$USER/web/malackathon25
+              
+              # Pull latest changes
+              git fetch origin
+              git reset --hard origin/main
             
             echo "🔧 Ejecutando script de deploy..."
             chmod +x deploy.sh

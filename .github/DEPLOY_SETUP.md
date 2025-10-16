@@ -32,7 +32,9 @@ cat ~/.ssh/github_deploy
 # Conectar por SSH
 ssh ubuntu@TU_IP_ORACLE
 
-# Clonar repositorio
+# Crear directorio web y clonar repositorio
+mkdir -p ~/web
+cd ~/web
 git clone https://github.com/TU_USUARIO/malackathon25.git
 cd malackathon25
 
@@ -74,7 +76,7 @@ curl https://dr-artificial.com/health
 
 # Ver logs en la VM
 ssh ubuntu@TU_IP_ORACLE
-cd ~/malackathon25
+cd ~/web/malackathon25
 docker-compose -f docker-compose.prod.yml logs -f
 ```
 

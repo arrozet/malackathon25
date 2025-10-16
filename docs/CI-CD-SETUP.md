@@ -69,6 +69,8 @@ cat ~/.ssh/github_deploy_key
 ```bash
 ssh ubuntu@<SSH_HOST>
 cd ~
+mkdir -p web
+cd web
 git clone https://github.com/<tu-usuario>/malackathon25.git
 cd malackathon25
 ```
@@ -151,8 +153,8 @@ docker-compose -f docker-compose.prod.yml logs -f
 **Causa:** El repositorio no está clonado en la VM o la ruta es incorrecta.
 
 **Solución:**
-1. Clona el repositorio: `git clone https://github.com/<usuario>/malackathon25.git`
-2. Verifica la ruta en el workflow (por defecto: `~/malackathon25`)
+1. Clona el repositorio: `mkdir -p ~/web && cd ~/web && git clone https://github.com/<usuario>/malackathon25.git`
+2. Verifica la ruta en el workflow (por defecto: `~/web/malackathon25`)
 
 ### Error: "Health check failed"
 
@@ -170,7 +172,7 @@ docker-compose -f docker-compose.prod.yml logs -f
 **Solución:**
 ```bash
 # En la VM
-cd ~/malackathon25
+cd ~/web/malackathon25
 git stash  # Guarda cambios locales
 git fetch origin
 git reset --hard origin/main
