@@ -355,13 +355,13 @@ h1 {
 }
 
 .footer-separator {
-  color: #6366f1;
+  color: #9d9fff;
   font-size: 0.85rem;
 }
 
 .footer-timestamp {
   font-size: 0.8rem;
-  color: #6366f1;
+  color: #9d9fff;
 }
 
 @media (max-width: 960px) {

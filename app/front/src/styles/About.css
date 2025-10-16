@@ -132,11 +132,11 @@
 }
 
 .about-link {
-  color: #a855f7;
+  color: #b876f9;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s ease;
-  border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+  border-bottom: 1px solid rgba(184, 118, 249, 0.3);
 }
 
 .about-link:hover {

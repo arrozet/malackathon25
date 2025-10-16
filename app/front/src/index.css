@@ -97,7 +97,7 @@ a {
 .btn-reset {
   background: transparent;
   border: 1px solid #7c3aed;
-  color: #a855f7;
+  color: #b876f9;
   padding: 0.375rem 0.75rem;
   border-radius: 6px;
   font-size: 0.875rem;
@@ -177,7 +177,7 @@ a {
 .summary-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #7c3aed;
+  color: #a473ff;
 }
 
 .chart-card {
@@ -246,7 +246,7 @@ a {
 }
 
 .status-message.status--error p {
-  color: #f87171;
+  color: #ff9e9e;
 }
 
 .status-message.status--warning {
