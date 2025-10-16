@@ -228,7 +228,7 @@ columna_inicio_contacto <- intersect(
   c(
     "Fecha inicio contacto",
     "Fecha de inicio contacto",
-    "Fecha de Inicio Contacto",
+    "Fecha de Inicio contacto",
     "Fecha Inicio Contacto"
   ),
   colnames(SaludMental_limpio)
