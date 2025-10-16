@@ -10,6 +10,18 @@
   color: #e5e7eb;
 }
 
+/* Smooth scrolling - native CSS implementation */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Respect user preference for reduced motion (accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
