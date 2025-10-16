@@ -10,9 +10,11 @@ This service implements a sophisticated multi-agent system where:
 This architecture optimizes token usage and improves response quality.
 """
 
-from typing import List, Dict, Any, Optional, TypedDict, Annotated
+from typing import List, Dict, Any, Optional, TypedDict, Annotated, AsyncGenerator
 import logging
 import operator
+import json
+import asyncio
 
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
@@ -282,9 +284,167 @@ class AIService:
         
         return state
     
+    async def chat_stream(self, message: str, chat_history: Optional[List[ChatMessage]] = None) -> AsyncGenerator[str, None]:
+        """
+        Processes a user message and streams progress events in real-time.
+        
+        This method yields Server-Sent Events (SSE) formatted strings that provide
+        real-time feedback about the multi-agent thinking process.
+        
+        Args:
+            message (str): User's message.
+            chat_history (Optional[List[ChatMessage]]): Previous conversation messages.
+        
+        Yields:
+            str: SSE-formatted event strings (data: {json}\n\n)
+        
+        Event types:
+            - thinking: Agent is thinking/working (e.g., "Analizando la pregunta...")
+            - routing: Routing decision made
+            - specialist_start: Specialist agent started
+            - specialist_complete: Specialist completed with summary
+            - synthesizing: Final synthesis in progress
+            - complete: Final response ready
+            - error: An error occurred
+        """
+        try:
+            logger.info(f"Processing chat message (streaming): {message[:100]}...")
+            
+            # Emit initial thinking event
+            yield self._format_sse_event({
+                "type": "thinking",
+                "message": "Analizando tu pregunta..."
+            })
+            await asyncio.sleep(0.1)  # Small delay for UX
+            
+            # Prepare chat history
+            formatted_history = []
+            if chat_history:
+                for msg in chat_history:
+                    if isinstance(msg, dict):
+                        formatted_history.append(msg)
+                    else:  # Pydantic model
+                        formatted_history.append({
+                            "role": msg.role,
+                            "content": msg.content
+                        })
+            
+            # Initialize state
+            initial_state: AgentState = {
+                "user_query": message,
+                "chat_history": formatted_history,
+                "routing_decision": [],
+                "specialist_summaries": [],
+                "final_response": "",
+                "tools_used": [],
+                "has_errors": False,
+            }
+            
+            # Step 1: Orchestrator routing
+            yield self._format_sse_event({
+                "type": "thinking",
+                "message": "Determinando qué especialistas deben intervenir..."
+            })
+            
+            orchestrator_state = self._orchestrator_node(initial_state)
+            routing = orchestrator_state.get("routing_decision", [])
+            
+            # Emit routing decision
+            specialist_names = {
+                "sql_specialist": "Base de Datos",
+                "search_specialist": "Búsqueda en Internet",
+                "python_specialist": "Análisis Estadístico",
+                "diagram_specialist": "Generación de Diagramas"
+            }
+            
+            routing_msg = ", ".join([specialist_names.get(s, s) for s in routing])
+            yield self._format_sse_event({
+                "type": "routing",
+                "specialists": routing,
+                "message": f"Consultando: {routing_msg}"
+            })
+            await asyncio.sleep(0.1)
+            
+            # Step 2: Execute specialists
+            current_state = orchestrator_state
+            
+            for specialist in routing:
+                specialist_display = specialist_names.get(specialist, specialist)
+                
+                # Emit specialist start
+                yield self._format_sse_event({
+                    "type": "specialist_start",
+                    "specialist": specialist,
+                    "message": f"🔍 {specialist_display} trabajando..."
+                })
+                
+                # Execute specialist
+                if specialist == "sql_specialist":
+                    current_state = self._sql_specialist_node(current_state)
+                elif specialist == "search_specialist":
+                    current_state = self._search_specialist_node(current_state)
+                elif specialist == "python_specialist":
+                    current_state = self._python_specialist_node(current_state)
+                elif specialist == "diagram_specialist":
+                    current_state = self._diagram_specialist_node(current_state)
+                
+                # Emit specialist complete
+                yield self._format_sse_event({
+                    "type": "specialist_complete",
+                    "specialist": specialist,
+                    "message": f"✓ {specialist_display} completado"
+                })
+                await asyncio.sleep(0.1)
+            
+            # Step 3: Synthesizer
+            yield self._format_sse_event({
+                "type": "synthesizing",
+                "message": "Integrando toda la información..."
+            })
+            
+            final_state = self._synthesizer_node(current_state)
+            
+            # Extract results
+            response = final_state.get("final_response", "No se pudo generar una respuesta.")
+            tools_used = final_state.get("tools_used", [])
+            has_errors = final_state.get("has_errors", False)
+            
+            # Emit final response
+            yield self._format_sse_event({
+                "type": "complete",
+                "response": response,
+                "tools_used": tools_used,
+                "has_errors": has_errors
+            })
+            
+            logger.info("Streaming chat completed successfully")
+            
+        except Exception as e:
+            error_msg = f"Error procesando mensaje: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            
+            # Emit error event
+            yield self._format_sse_event({
+                "type": "error",
+                "message": f"Lo siento, ocurrió un error: {str(e)}"
+            })
+    
+    def _format_sse_event(self, data: Dict[str, Any]) -> str:
+        """
+        Formats a dictionary as a Server-Sent Event (SSE).
+        
+        Args:
+            data (Dict[str, Any]): Event data to send.
+        
+        Returns:
+            str: SSE-formatted event string.
+        """
+        json_data = json.dumps(data, ensure_ascii=False)
+        return f"data: {json_data}\n\n"
+    
     def chat(self, message: str, chat_history: Optional[List[ChatMessage]] = None) -> Dict[str, Any]:
         """
-        Processes a user message and returns a response.
+        Processes a user message and returns a response (non-streaming version).
         
         Args:
             message (str): User's message.

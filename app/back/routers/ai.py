@@ -6,6 +6,7 @@ This router exposes endpoints for interacting with the Brain AI assistant.
 
 from typing import Optional
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 import logging
 
 from app.back.services.ai_service import AIService
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Create router
 router = APIRouter(
-    prefix="/ai",
+    prefix="/api/ai",
     tags=["AI Assistant"],
     responses={
         500: {"description": "Internal server error"},
@@ -55,13 +56,100 @@ def get_ai_service() -> AIService:
     return _ai_service_instance
 
 
+@router.post("/chat/stream")
+async def chat_stream(request: AIChatRequest):
+    """
+    Chat with the Brain AI assistant (streaming version with real-time progress).
+    
+    This endpoint processes natural language queries and streams progress events
+    in real-time using Server-Sent Events (SSE). This provides transparency into
+    the multi-agent thinking process.
+    
+    Args:
+        request (AIChatRequest): Chat request with message and optional history.
+    
+    Returns:
+        StreamingResponse: SSE stream with progress events and final response.
+    
+    Raises:
+        HTTPException: If AI service is unavailable or processing fails.
+    
+    Event types streamed:
+        - thinking: General thinking/analysis message
+        - routing: Specialist routing decision
+        - specialist_start: A specialist started working
+        - specialist_complete: A specialist completed their task
+        - synthesizing: Final synthesis in progress
+        - complete: Final response ready (includes full response text)
+        - error: An error occurred
+    
+    Example:
+        ```python
+        POST /ai/chat/stream
+        {
+            "message": "¿Cuántos episodios hay en 2023?",
+            "chat_history": []
+        }
+        
+        # Response (SSE format):
+        data: {"type": "thinking", "message": "Analizando tu pregunta..."}
+        
+        data: {"type": "routing", "specialists": ["sql_specialist"], "message": "Consultando: Base de Datos"}
+        
+        data: {"type": "specialist_start", "specialist": "sql_specialist", "message": "🔍 Base de Datos trabajando..."}
+        
+        data: {"type": "specialist_complete", "specialist": "sql_specialist", "message": "✓ Base de Datos completado"}
+        
+        data: {"type": "synthesizing", "message": "Integrando toda la información..."}
+        
+        data: {"type": "complete", "response": "Hay 1,234 episodios...", "tools_used": ["oracle_rag"], "has_errors": false}
+        ```
+    """
+    try:
+        logger.info(f"Received streaming chat request: {request.message[:100]}...")
+        
+        # Get AI service
+        ai_service = get_ai_service()
+        
+        # Create streaming response
+        return StreamingResponse(
+            ai_service.chat_stream(
+                message=request.message,
+                chat_history=request.chat_history,
+            ),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",  # Disable nginx buffering
+            }
+        )
+        
+    except ValueError as e:
+        # Configuration error
+        logger.error(f"Configuration error: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"AI service not properly configured: {str(e)}"
+        )
+    except Exception as e:
+        # Processing error
+        logger.error(f"Error processing streaming chat request: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing streaming chat request: {str(e)}"
+        )
+
+
 @router.post("/chat", response_model=AIChatResponse)
 async def chat(request: AIChatRequest) -> AIChatResponse:
     """
-    Chat with the Brain AI assistant.
+    Chat with the Brain AI assistant (non-streaming version).
     
     This endpoint processes natural language queries and returns AI-generated responses
     using the configured tools (database queries, internet search, code execution, diagrams).
+    
+    For real-time progress updates, use /ai/chat/stream instead.
     
     Args:
         request (AIChatRequest): Chat request with message and optional history.

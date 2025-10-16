@@ -12,8 +12,8 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { sendChatMessage } from '../api/chat.api'
-import type { ChatMessage } from '../types/chat'
+import { sendChatMessageStream } from '../api/chat.api'
+import type { ChatMessage, ThinkingStep } from '../types/chat'
 
 /**
  * Hook return type defining the chat interface.
@@ -21,6 +21,8 @@ import type { ChatMessage } from '../types/chat'
 export interface UseChatAIReturn {
   /** Array of chat messages (user and assistant) */
   messages: ChatMessage[]
+  /** Current thinking steps (progress indicators) */
+  thinkingSteps: ThinkingStep[]
   /** Whether a message is currently being sent */
   isLoading: boolean
   /** Error message if the last request failed */
@@ -51,6 +53,9 @@ export function useChatAI(): UseChatAIReturn {
   // State for message history
   const [messages, setMessages] = useState<ChatMessage[]>([])
   
+  // State for thinking steps (progress indicators)
+  const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([])
+  
   // Loading state
   const [isLoading, setIsLoading] = useState(false)
   
@@ -59,6 +64,9 @@ export function useChatAI(): UseChatAIReturn {
   
   // AbortController ref to cancel requests on unmount
   const abortControllerRef = useRef<AbortController | null>(null)
+  
+  // Counter for generating unique step IDs
+  const stepIdCounter = useRef(0)
 
   /**
    * Cleanup on unmount.
@@ -74,13 +82,14 @@ export function useChatAI(): UseChatAIReturn {
   }, [])
 
   /**
-   * Sends a message to the AI assistant.
+   * Sends a message to the AI assistant using streaming.
    * 
    * This function:
    * 1. Adds user message to history
    * 2. Sends request to backend with full conversation history
-   * 3. Adds assistant response to history
-   * 4. Handles errors gracefully
+   * 3. Receives real-time thinking progress updates
+   * 4. Adds assistant response to history when complete
+   * 5. Handles errors gracefully
    * 
    * @param message - User's message text
    */
@@ -90,8 +99,9 @@ export function useChatAI(): UseChatAIReturn {
       return
     }
 
-    // Clear previous errors
+    // Clear previous errors and thinking steps
     setError(null)
+    setThinkingSteps([])
     setIsLoading(true)
 
     // Cancel any previous pending request
@@ -114,27 +124,69 @@ export function useChatAI(): UseChatAIReturn {
     setMessages(prev => [...prev, userMessage])
 
     try {
-      // Send request with full conversation history
-      const response = await sendChatMessage(
+      // Send request with streaming
+      await sendChatMessageStream(
         {
           message: message.trim(),
           chatHistory: messages  // Include previous messages for context
         },
+        (event) => {
+          // Handle each thinking event
+          const stepId = `step-${++stepIdCounter.current}`
+          
+          if (event.type === 'complete') {
+            // Final response received
+            const assistantMessage: ChatMessage = {
+              role: 'assistant',
+              content: event.response || 'No se recibió respuesta.',
+              timestamp: new Date(),
+              toolsUsed: event.tools_used
+            }
+
+            // Add assistant response to messages
+            setMessages(prev => [...prev, assistantMessage])
+            
+            // Mark all thinking steps as inactive
+            setThinkingSteps(prev => 
+              prev.map(step => ({ ...step, isActive: false }))
+            )
+            
+            setIsLoading(false)
+            
+          } else if (event.type === 'error') {
+            // Error occurred
+            setError(event.message)
+            
+            const errorMessage: ChatMessage = {
+              role: 'assistant',
+              content: event.message,
+              timestamp: new Date()
+            }
+            
+            setMessages(prev => [...prev, errorMessage])
+            setThinkingSteps([])
+            setIsLoading(false)
+            
+          } else {
+            // Progress event - add thinking step
+            const newStep: ThinkingStep = {
+              id: stepId,
+              type: event.type,
+              message: event.message,
+              timestamp: new Date(),
+              isActive: true
+            }
+            
+            setThinkingSteps(prev => {
+              // Mark previous step as inactive
+              const updated = prev.map(step => ({ ...step, isActive: false }))
+              // Add new active step
+              return [...updated, newStep]
+            })
+          }
+        },
         abortController.signal  // Pass abort signal
       )
-
-      // Create assistant message from response
-      const assistantMessage: ChatMessage = {
-        role: 'assistant',
-        content: response.response,
-        timestamp: new Date(),
-        toolsUsed: response.tool_calls
-      }
-
-      // Add assistant response to messages
-      setMessages(prev => [...prev, assistantMessage])
-
-      setIsLoading(false)
 
     } catch (err) {
       // Ignore abort errors (they're expected when component unmounts)
@@ -154,6 +206,7 @@ export function useChatAI(): UseChatAIReturn {
       }
       
       setMessages(prev => [...prev, errorAssistantMessage])
+      setThinkingSteps([])
       setIsLoading(false)
     }
   }, [messages])
@@ -163,11 +216,13 @@ export function useChatAI(): UseChatAIReturn {
    */
   const clearChat = useCallback(() => {
     setMessages([])
+    setThinkingSteps([])
     setError(null)
   }, [])
 
   return {
     messages,
+    thinkingSteps,
     isLoading,
     error,
     sendMessage,

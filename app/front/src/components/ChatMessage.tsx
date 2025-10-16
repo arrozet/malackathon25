@@ -2,10 +2,13 @@
  * ChatMessage Component - Renders an individual chat message.
  * 
  * This component displays a message from either the user or the AI assistant,
- * with appropriate styling and accessibility support.
+ * with appropriate styling and accessibility support. Assistant messages support
+ * markdown rendering for rich formatting.
  */
 
 import type { ReactElement } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { ChatMessage as ChatMessageType } from '../types/chat'
 
 /**
@@ -52,9 +55,30 @@ export default function ChatMessage({ message }: ChatMessageProps): ReactElement
       aria-label={`Mensaje de ${isUser ? 'usuario' : 'asistente'}`}
     >
       <div className="chat-message__content">
-        {/* Message text */}
+        {/* Message text - render markdown for assistant, plain text for user */}
         <div className="chat-message__text">
-          {message.content}
+          {isAssistant ? (
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                // Ensure links open in new tab for security
+                a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                // Ensure code blocks have proper styling
+                code: ({ node, className, children, ...props }) => {
+                  const inline = !className
+                  return inline ? (
+                    <code className="inline-code" {...props}>{children}</code>
+                  ) : (
+                    <code className={className} {...props}>{children}</code>
+                  )
+                }
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          ) : (
+            message.content
+          )}
         </div>
 
         {/* Footer with timestamp and tools */}

@@ -32,7 +32,7 @@ import '../styles/Chat.css'
  */
 export default function Chat(): ReactElement {
   // Use custom hook for chat logic (encapsulates all business logic)
-  const { messages, isLoading, error, sendMessage, clearChat } = useChatAI()
+  const { messages, thinkingSteps, isLoading, error, sendMessage, clearChat } = useChatAI()
 
   return (
     <div className="chat-page">
@@ -89,10 +89,11 @@ export default function Chat(): ReactElement {
 
       {/* Main chat area */}
       <main className="chat-main">
-        {/* Messages container with auto-scroll */}
+        {/* Messages container with auto-scroll and thinking chain */}
         <ChatContainer 
           isLoading={isLoading} 
           isEmpty={messages.length === 0}
+          thinkingSteps={thinkingSteps}
         >
           {messages.map((message, index) => (
             <ChatMessage key={index} message={message} />

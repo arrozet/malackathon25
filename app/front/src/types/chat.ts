@@ -53,3 +53,51 @@ export interface IntermediateStep {
   output: string
 }
 
+/**
+ * Progress event types from the streaming AI endpoint.
+ */
+export type ThinkingEventType = 
+  | 'thinking'          // General thinking/analysis
+  | 'routing'           // Routing decision made
+  | 'specialist_start'  // Specialist started working
+  | 'specialist_complete' // Specialist completed
+  | 'synthesizing'      // Final synthesis
+  | 'complete'          // Response complete
+  | 'error'             // Error occurred
+
+/**
+ * Progress event from the streaming chat endpoint.
+ */
+export interface ThinkingEvent {
+  /** Type of event */
+  type: ThinkingEventType
+  /** Human-readable message about the current step */
+  message: string
+  /** Specialist name (for specialist_* events) */
+  specialist?: string
+  /** List of specialists being consulted (for routing event) */
+  specialists?: string[]
+  /** Final response (for complete event) */
+  response?: string
+  /** Tools used (for complete event) */
+  tools_used?: string[]
+  /** Whether errors occurred (for complete event) */
+  has_errors?: boolean
+}
+
+/**
+ * Thinking chain entry displayed in the UI.
+ */
+export interface ThinkingStep {
+  /** Unique ID for this step */
+  id: string
+  /** Type of step */
+  type: ThinkingEventType
+  /** Display message */
+  message: string
+  /** Timestamp when the step was created */
+  timestamp: Date
+  /** Whether this step is currently active/in-progress */
+  isActive: boolean
+}
+
