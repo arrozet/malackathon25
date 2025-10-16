@@ -112,3 +112,4 @@ vignettes/*.pdf
 data/R/SaludMental.xls
 data/R/R.Rproj
 *.xlsx
+*.csv
