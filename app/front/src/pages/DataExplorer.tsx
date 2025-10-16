@@ -1,74 +1,37 @@
-import { useState, useEffect, useCallback } from 'react'
+/**
+ * DataExplorer Page - Interactive data exploration interface.
+ * 
+ * This page component provides comprehensive data exploration capabilities
+ * by combining filtering controls with interactive visualizations.
+ */
+
+import { useState } from 'react'
 import type { ReactElement } from 'react'
 import DataFilters from '../components/DataFilters'
 import DataCharts from '../components/DataCharts'
-import type { DataVisualization, DataFilters as FilterType } from '../types/data'
-
-const API_BASE_URL = '/api'
+import { useVisualization } from '../hooks'
+import type { DataFilters as FilterType } from '../types/data'
 
 /**
- * DataExplorer page component providing interactive data exploration capabilities.
- * Combines filtering controls with visualization charts to explore mental health admission data.
+ * DataExplorer page component.
+ * 
+ * Combines filtering controls with visualization charts to enable
+ * interactive exploration of mental health admission data. Uses the
+ * useVisualization hook to automatically fetch data when filters change.
  * 
  * @returns React element rendering the complete data exploration interface
  */
 export default function DataExplorer(): ReactElement {
-  const [data, setData] = useState<DataVisualization | null>(null)
+  // Manage filter state locally
   const [filters, setFilters] = useState<FilterType>({})
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  /**
-   * Fetches visualization data from the API with current filters.
-   * Uses an AbortController to prevent memory leaks from cancelled requests.
-   */
-  const fetchData = useCallback(async () => {
-    const controller = new AbortController()
-    setLoading(true)
-    setError(null)
-
-    try {
-      // Build query parameters from filters
-      const params = new URLSearchParams()
-      if (filters.start_date) params.append('start_date', filters.start_date)
-      if (filters.end_date) params.append('end_date', filters.end_date)
-      if (filters.gender !== undefined) params.append('gender', filters.gender.toString())
-      if (filters.age_min !== undefined) params.append('age_min', filters.age_min.toString())
-      if (filters.age_max !== undefined) params.append('age_max', filters.age_max.toString())
-      if (filters.category) params.append('category', filters.category)
-      if (filters.readmission !== undefined) params.append('readmission', filters.readmission.toString())
-
-      const url = `${API_BASE_URL}/data/visualization?${params.toString()}`
-      const response = await fetch(url, { signal: controller.signal })
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`)
-      }
-
-      const visualizationData: DataVisualization = await response.json()
-      setData(visualizationData)
-      setError(null)
-    } catch (fetchError) {
-      if ((fetchError as Error).name === 'AbortError') {
-        return
-      }
-      setError('No se pudo cargar los datos de visualización. Verifica la conexión con el backend.')
-      console.error('Failed to fetch visualization data:', fetchError)
-    } finally {
-      setLoading(false)
-    }
-
-    return () => controller.abort()
-  }, [filters])
-
-  // Fetch data when filters change
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  // Fetch visualization data using custom hook
+  // Automatically refetches when filters change
+  const { data, loading, error, refetch } = useVisualization(filters)
 
   /**
    * Handles filter changes from the DataFilters component.
-   * Updates the filters state which triggers a new data fetch.
+   * Updates the filters state which triggers automatic data refetch via the hook.
    * 
    * @param newFilters - Updated filter values
    */
@@ -78,14 +41,16 @@ export default function DataExplorer(): ReactElement {
 
   return (
     <div className="explorer-page">
+      {/* Page header */}
       <div className="explorer-header">
         <h1>Exploración de datos</h1>
         <p className="explorer-subtitle">
-          Filtra y visualiza los datos de admisiones de salud mental. Los gráficos se actualizan en tiempo real según
-          los filtros aplicados.
+          Filtra y visualiza los datos de admisiones de salud mental. Los gráficos se actualizan
+          en tiempo real según los filtros aplicados.
         </p>
       </div>
 
+      {/* Main explorer layout */}
       <div className="explorer-layout">
         {/* Filters sidebar */}
         <aside className="explorer-sidebar">
@@ -94,6 +59,7 @@ export default function DataExplorer(): ReactElement {
 
         {/* Main content area with charts */}
         <main className="explorer-content">
+          {/* Loading state */}
           {loading && (
             <div className="status-message">
               <div className="spinner" />
@@ -101,21 +67,25 @@ export default function DataExplorer(): ReactElement {
             </div>
           )}
 
+          {/* Error state with retry button */}
           {error && !loading && (
             <div className="status-message status--error">
               <p>{error}</p>
-              <button type="button" className="btn-retry" onClick={() => fetchData()}>
+              <button type="button" className="btn-retry" onClick={refetch}>
                 Reintentar
               </button>
             </div>
           )}
 
+          {/* Success state with data */}
           {data && !loading && !error && (
             <>
               {data.total_records === 0 ? (
                 <div className="status-message status--warning">
                   <p>No se encontraron registros con los filtros aplicados.</p>
-                  <p className="hint">Intenta ajustar o limpiar los filtros para ver más datos.</p>
+                  <p className="hint">
+                    Intenta ajustar o limpiar los filtros para ver más datos.
+                  </p>
                 </div>
               ) : (
                 <DataCharts data={data} />
@@ -127,4 +97,3 @@ export default function DataExplorer(): ReactElement {
     </div>
   )
 }
-
