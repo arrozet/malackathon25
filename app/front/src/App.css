@@ -336,8 +336,12 @@ h1 {
   padding: 0.4rem 0.8rem;
 }
 
+/* 
+  ACCESIBILIDAD: Lista de definiciones semántica para métricas.
+  Usa <dl>, <dt>, <dd> para representar correctamente pares término-valor.
+  REFERENCIA: HTML5 Spec - The dl element
+*/
 .card__metric-list {
-  list-style: none;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -350,14 +354,31 @@ h1 {
   gap: 0.4rem;
 }
 
+/* Reset default margins for dt and dd elements */
+.card__metric-list dt,
+.card__metric-list dd {
+  margin: 0;
+}
+
+/* 
+  ACCESIBILIDAD: metric__title como <dt> (definition term).
+  Término semántico en lista de definiciones para datos de métricas.
+  REFERENCIA: HTML5 Spec - The dt element, WCAG 2.1 - 1.3.1 Info and Relationships
+*/
 .metric__title {
   font-size: 0.95rem;
   color: #d1d5db;
   /* Updated from #cbd5f5 to #d1d5db for WCAG AA compliance */
   margin: 0;
   letter-spacing: 0.01em;
+  font-weight: 400;
 }
 
+/* 
+  ACCESIBILIDAD: metric__value como <dd> (definition description).
+  Valor numérico en lista de definiciones - no es un encabezado.
+  REFERENCIA: HTML5 Spec - The dd element, WCAG 2.1 - 1.3.1 Info and Relationships
+*/
 .metric__value {
   font-size: 1.8rem;
   font-weight: 600;
@@ -365,6 +386,11 @@ h1 {
   margin: 0;
 }
 
+/* 
+  ACCESIBILIDAD: metric__description como <dd> (definition description).
+  Descripción textual adicional del valor de la métrica.
+  REFERENCIA: HTML5 Spec - The dd element
+*/
 .metric__description {
   font-size: 0.9rem;
   color: #d1d5db;

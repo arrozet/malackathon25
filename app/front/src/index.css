@@ -100,7 +100,8 @@ select:focus-visible {
 }
 
 .explorer-header h1,
-.explorer-header h2 {
+.explorer-header h2,
+.explorer-header h3 {
   font-size: 2rem;
   font-weight: 700;
   color: #e5e7eb;
@@ -498,7 +499,8 @@ select.filter-input {
   }
 
   .explorer-header h1,
-  .explorer-header h2 {
+  .explorer-header h2,
+  .explorer-header h3 {
     font-size: 1.5rem;
   }
 

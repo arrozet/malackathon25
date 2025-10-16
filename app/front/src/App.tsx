@@ -69,7 +69,7 @@ function App(): ReactElement {
               {item.label}
             </a>
           ))}
-          <a href="/chat" className="nav__link nav__link--primary">
+          <a href="/chat" className="nav__link nav__link--primary" aria-label="Acceder al chat con inteligencia artificial">
             <svg 
               className="nav__link-icon" 
               width="16" 
@@ -111,7 +111,7 @@ function App(): ReactElement {
               comités clínicos.
             </p>
             <div className="hero__actions">
-              <a href="/chat" className="btn btn--primary">
+              <a href="/chat" className="btn btn--primary" aria-label="Iniciar conversación con Brain IA">
                 <svg 
                   className="btn__icon" 
                   width="20" 
@@ -172,15 +172,27 @@ function App(): ReactElement {
                       <h2 id={sectionId}>{section.title}</h2>
                       <span className="card__period">{insights.sample_period}</span>
                     </div>
-                    <ul className="card__metric-list">
-                      {section.metrics.map((metric) => (
-                        <li key={metric.title} className="card__metric-item">
-                          <p className="metric__title">{metric.title}</p>
-                          <p className="metric__value">{metric.value}</p>
-                          <p className="metric__description">{metric.description}</p>
-                        </li>
-                      ))}
-                    </ul>
+                    <dl className="card__metric-list">
+                      {section.metrics.map((metric) => {
+                        // Generate unique IDs for ARIA relationships
+                        const metricId = `metric-${toSlug(section.title)}-${toSlug(metric.title)}`
+                        const valueId = `value-${toSlug(section.title)}-${toSlug(metric.title)}`
+                        
+                        return (
+                          <div key={metric.title} className="card__metric-item">
+                            <dt className="metric__title" id={metricId}>{metric.title}</dt>
+                            <dd 
+                              className="metric__value" 
+                              id={valueId}
+                              aria-labelledby={`${metricId} ${valueId}`}
+                            >
+                              {metric.value}
+                            </dd>
+                            <dd className="metric__description">{metric.description}</dd>
+                          </div>
+                        )
+                      })}
+                    </dl>
                   </article>
                 )
               })}
