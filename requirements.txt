@@ -8,10 +8,23 @@ oracledb==2.2.0
 # Utilidades y configuración
 python-dotenv==1.0.1
 pydantic==2.7.4
-pydantic-settings==2.3.4
+pydantic-settings==2.4.0
 
 # ORM (opcional, pero ya estaba en requirements)
 SQLAlchemy==2.0.31
 
 # Para healthchecks en Docker
 requests==2.32.3
+
+# LangChain y AI
+langchain==0.3.13
+langchain-core==0.3.28
+langchain-openai==0.2.14  # Para integración con xAI (API compatible con OpenAI)
+langchain-community==0.3.13
+langgraph==0.2.50  # Multi-agent orchestration
+
+# Herramientas adicionales para IA
+tavily-python==0.5.0  # Internet search
+matplotlib==3.9.0  # Para gráficos en Python executor
+pandas==2.2.2  # Para análisis de datos en Python executor
+numpy==1.26.4  # Para cálculos numéricos

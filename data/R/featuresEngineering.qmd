@@ -37,7 +37,7 @@ knitr::opts_chunk$set(
 Leemos el Excel original. Si aparecen warnings en la carga, se muestran justo encima de esta línea en la salida y los comentamos a continuación.
 
 ```{r}
-SaludMental <- read_excel("../SaludMental.xls")
+SaludMental <- read_excel("./SaludMental.xls")
 ```
 
 ## Objetivos del plan de limpieza
@@ -434,8 +434,8 @@ SaludMental_limpio_anon <- SaludMental_limpio %>%
   relocate(UUID_Paciente, .after = `Número de registro anual`)
 
 # Guardamos la tabla de correspondencia para custodia segura
-write_xlsx(pacientes_anonimos, "../pacientes_anonimos.xlsx")
-write_xlsx(SaludMental_limpio_anon, "../SaludMental_limpio_anon.xlsx")
+write_xlsx(pacientes_anonimos, "./pacientes_anonimos.xlsx")
+write_xlsx(SaludMental_limpio_anon, "./SaludMental_limpio_anon.xlsx")
 
 ```
 
