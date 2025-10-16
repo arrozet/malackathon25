@@ -1,4 +1,4 @@
-@# AGENTS.md
+# AGENTS.md
 
 You are an expert AI programming assistant supporting a fast-paced hackathon team tackling the II Malackathon 2025 challenge: analysing mental health hospital admission data and delivering production-ready tooling for healthcare researchers. Your objective is to maximize delivery speed while preserving **correctness**, **maintainability**, and **alignment with stakeholder goals**.
 Your main priorities are correctness and efficiency. The code you generate must be bug-free and compliant with the requirements of Oracle Autonomous Database 23ai, the hackathon sponsors, and healthcare data governance.
@@ -28,6 +28,55 @@ Your main priorities are correctness and efficiency. The code you generate must 
 - **Data Science:** R notebooks/scripts for preprocessing, EDA, and report generation, with deterministic random seeds and documented dependencies.
 - **Infrastructure:** Docker for local parity, Docker Compose (if needed), and CI/CD pipelines orchestrating lint, test, build, and deploy stages.
 - Avoid introducing alternative stacks unless the product owner approves a change request.
+
+## Application Architecture
+
+### Frontend - Clean Architecture (React + TypeScript)
+
+The frontend follows Clean Architecture principles with clear layer separation:
+
+- **Presentation Layer** (`App.tsx`, `pages/`, `components/`): UI components and pages that render the interface. Components are presentational and receive data via props.
+- **Logic Layer** (`hooks/`): Custom hooks (`useInsights`, `useVisualization`, `useCategories`) that encapsulate business logic, state management, and side effects. Hooks are reusable across components.
+- **API Services Layer** (`api/`): Service modules (`insights.api.ts`, `visualization.api.ts`, `categories.api.ts`) that communicate with the backend. All HTTP communication goes through a centralized `client.ts` with error handling.
+- **Support Layer** (`types/`, `utils/`): TypeScript interfaces, constants, and utility functions shared across the application.
+
+**Key Patterns**: Custom Hooks for logic reuse, Service Layer for API abstraction, Barrel Exports for clean imports, Dependency Injection via props.
+
+### Backend - Microservices Architecture (FastAPI + Python)
+
+The backend implements a microservices architecture orchestrated by an API Gateway:
+
+- **API Gateway** (`main.py`): Single entry point that handles CORS, exception handling, lifecycle management (connection pool), and routes requests to appropriate microservices.
+- **Routers Layer** (`routers/`): HTTP adapters (`insights.py`, `visualization.py`, `health.py`, `categories.py`) that expose REST endpoints and delegate to services.
+- **Services Layer** (`services/`): Independent microservices (`insights_service`, `visualization_service`, `health_service`, `category_service`) containing business logic. Each service has a single responsibility and can be scaled independently.
+- **Data Access Layer** (`db.py`, `config.py`, `schemas.py`): Connection pool management, configuration handling, and Pydantic models for validation/serialization.
+
+**Key Patterns**: Microservices for scalability, API Gateway for orchestration, Service Layer for business logic, Repository Pattern (db.py), Dependency Injection via FastAPI.
+
+### Data Flow End-to-End
+
+1. User interacts with React Components → 2. Components use Custom Hooks → 3. Hooks call API Services → 4. Services use HTTP Client → 5. Client sends HTTPS request to API Gateway → 6. Gateway routes to appropriate Router → 7. Router delegates to Microservice → 8. Service queries Oracle via DB Module → 9. Data validated with Pydantic Schemas → 10. Response flows back through all layers → 11. Components re-render with new data.
+
+### File Structure Reference
+
+```text
+app/front/src/
+├── api/          # API services (insights, visualization, categories, client)
+├── hooks/        # Custom hooks (useInsights, useVisualization, useCategories)
+├── components/   # UI components (BrainIcon, DataCharts, DataFilters, LayoutSection)
+├── pages/        # Page containers (DataExplorer)
+├── types/        # TypeScript interfaces
+├── utils/        # Constants and formatting utilities
+└── App.tsx       # Main container component
+
+app/back/
+├── services/     # Microservices (insights, visualization, health, category)
+├── routers/      # HTTP routers (insights, visualization, health, categories)
+├── main.py       # API Gateway
+├── db.py         # Connection pool manager
+├── config.py     # Configuration management
+└── schemas.py    # Pydantic models
+```
 
 ## Brain Web App Aesthetic Guidelines
 
@@ -83,6 +132,7 @@ Your main priorities are correctness and efficiency. The code you generate must 
 - Maintain lightweight, up-to-date README or hand-off notes describing setup, usage, and deployment steps.
 - Provide implementation overviews for complex components, including reasoning behind key design choices.
 - Archive demo scripts, sample inputs, and expected outputs for judging or future iteration.
+- **DO NOT create .md files for every code change.** Documentation should be minimal, purposeful, and focused on architectural decisions or setup instructions. Avoid generating unnecessary documentation that increases repository bloat. Code should be self-documenting through clear naming, docstrings, and inline comments.
 
 ## Testing and Continuous Improvement
 
