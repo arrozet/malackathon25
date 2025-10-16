@@ -161,6 +161,49 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
         <h4 className="chart-title" id="chart-gender-title">Distribución por género</h4>
         <ResponsiveContainer width="100%" height={400} aria-labelledby="chart-gender-title">
           <PieChart>
+            {/* SVG pattern definitions for accessibility - allows color-blind users to distinguish sectors */}
+            <defs>
+              {/* Diagonal lines pattern - creates a background with base color and white diagonal lines */}
+              {CHART_COLORS.map((color, idx) => (
+                <pattern
+                  key={`pattern-diagonal-${idx}`}
+                  id={`pattern-diagonal-${idx}`}
+                  width="10"
+                  height="10"
+                  patternUnits="userSpaceOnUse"
+                  patternTransform="rotate(45)"
+                >
+                  <rect width="10" height="10" fill={color} />
+                  <line x1="0" y1="0" x2="0" y2="10" stroke="#FFFFFF" strokeWidth="3" opacity="0.5" />
+                </pattern>
+              ))}
+              {/* Dots pattern - creates a background with base color and white dots */}
+              {CHART_COLORS.map((color, idx) => (
+                <pattern
+                  key={`pattern-dots-${idx}`}
+                  id={`pattern-dots-${idx}`}
+                  width="12"
+                  height="12"
+                  patternUnits="userSpaceOnUse"
+                >
+                  <rect width="12" height="12" fill={color} />
+                  <circle cx="6" cy="6" r="2" fill="#FFFFFF" opacity="0.6" />
+                </pattern>
+              ))}
+              {/* Horizontal lines pattern - creates a background with base color and white horizontal lines */}
+              {CHART_COLORS.map((color, idx) => (
+                <pattern
+                  key={`pattern-horizontal-${idx}`}
+                  id={`pattern-horizontal-${idx}`}
+                  width="10"
+                  height="10"
+                  patternUnits="userSpaceOnUse"
+                >
+                  <rect width="10" height="10" fill={color} />
+                  <line x1="0" y1="5" x2="10" y2="5" stroke="#FFFFFF" strokeWidth="3" opacity="0.5" />
+                </pattern>
+              ))}
+            </defs>
             <Pie
               data={data.gender_distribution as any[]}
               dataKey="count"
@@ -172,9 +215,20 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
                 `${entry.gender}: ${entry.count} (${entry.percentage.toFixed(1)}%)`
               }
             >
-              {data.gender_distribution.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-              ))}
+              {data.gender_distribution.map((_, index) => {
+                // Define pattern types for each sector: diagonal, dots, or horizontal
+                const patternTypes = ['diagonal', 'dots', 'horizontal']
+                const patternType = patternTypes[index % patternTypes.length]
+                const colorIndex = index % CHART_COLORS.length
+                
+                // Use pattern fill instead of solid color for accessibility
+                return (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={`url(#pattern-${patternType}-${colorIndex})`}
+                  />
+                )
+              })}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
             <Legend />
