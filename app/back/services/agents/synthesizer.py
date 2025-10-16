@@ -46,7 +46,7 @@ class SynthesizerAgent:
             base_url="https://api.x.ai/v1",
             model="grok-4-fast-reasoning",
             temperature=0.5,  # Balanced creativity for natural responses
-            max_tokens=1000,
+            max_tokens=8000,  # Increased for longer, comprehensive responses
         )
         
         logger.info("Synthesizer Agent initialized")
