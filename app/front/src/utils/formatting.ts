@@ -88,3 +88,27 @@ export function truncateText(text: string, maxLength: number): string {
   return `${text.slice(0, maxLength)}...`
 }
 
+/**
+ * Converts a text string to a valid HTML ID (slug).
+ * Removes accents, converts to lowercase, and replaces spaces with hyphens.
+ * 
+ * @param text - Text to convert to slug
+ * @returns Valid HTML ID string
+ * 
+ * @example
+ * ```typescript
+ * toSlug('Panorama general') // "panorama-general"
+ * toSlug('Perspectiva por género y edad') // "perspectiva-por-genero-y-edad"
+ * ```
+ */
+export function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD') // Normalize accents
+    .replace(/[\u0300-\u036f]/g, '') // Remove accent marks
+    .replace(/[^a-z0-9\s-]/g, '') // Remove non-alphanumeric characters (except spaces and hyphens)
+    .trim()
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+}
+

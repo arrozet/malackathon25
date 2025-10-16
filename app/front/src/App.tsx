@@ -12,7 +12,7 @@ import LayoutSection from './components/LayoutSection'
 import DataExplorer from './pages/DataExplorer'
 import { useInsights } from './hooks'
 import { NAV_ITEMS } from './utils/constants'
-import { formatDateTime } from './utils/formatting'
+import { formatDateTime, toSlug } from './utils/formatting'
 import './App.css'
 
 /**
@@ -158,27 +158,32 @@ function App(): ReactElement {
 
           {insights && !loading && !error && (
             <section className="grid" aria-label="Resúmenes por dimensión analítica">
-              {insights.metric_sections.map((section) => (
-                <article
-                  key={section.title}
-                  className="card"
-                  aria-labelledby={`section-${section.title}`}
-                >
-                  <div className="card__header">
-                    <h2 id={`section-${section.title}`}>{section.title}</h2>
-                    <span className="card__period">{insights.sample_period}</span>
-                  </div>
-                  <ul className="card__metric-list">
-                    {section.metrics.map((metric) => (
-                      <li key={metric.title} className="card__metric-item">
-                        <p className="metric__title">{metric.title}</p>
-                        <p className="metric__value">{metric.value}</p>
-                        <p className="metric__description">{metric.description}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
+              {insights.metric_sections.map((section) => {
+                // Generate valid HTML ID from section title
+                const sectionId = `section-${toSlug(section.title)}`
+                
+                return (
+                  <article
+                    key={section.title}
+                    className="card"
+                    aria-labelledby={sectionId}
+                  >
+                    <div className="card__header">
+                      <h2 id={sectionId}>{section.title}</h2>
+                      <span className="card__period">{insights.sample_period}</span>
+                    </div>
+                    <ul className="card__metric-list">
+                      {section.metrics.map((metric) => (
+                        <li key={metric.title} className="card__metric-item">
+                          <p className="metric__title">{metric.title}</p>
+                          <p className="metric__value">{metric.value}</p>
+                          <p className="metric__description">{metric.description}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </article>
+                )
+              })}
             </section>
           )}
         </LayoutSection>
