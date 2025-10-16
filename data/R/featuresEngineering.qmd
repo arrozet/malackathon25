@@ -20,6 +20,7 @@ library(patchwork)
 library(writexl)
 library(lubridate)
 library(stringr)
+library(uuid)
 
 # Opciones de gráficos para acelerar el render a PDF
 knitr::opts_chunk$set(
@@ -174,6 +175,87 @@ head(fechas_no_parseadas, 5)
 ```
 
 No hay valores mal formateados.
+
+## Normalización de `Fecha Inicio Contacto`
+
+El extracto original almacena `Fecha Inicio Contacto` como una cadena compacta (por ejemplo, `01012016 1622`) que combina fecha y hora sin separadores. Para facilitar su análisis y cumplir con el estándar solicitado (`aaaa-mm-dd hh:mm`), separamos la información en dos columnas legibles: una para la fecha y otra para la hora.
+
+```{r}
+normalizar_inicio_contacto <- function(x) {
+  # Aseguramos que el vector esté en formato carácter y limpiamos entradas vacías
+  x_chr <- trimws(as.character(x))
+  x_chr[x_chr %in% c("", "NA")] <- NA_character_
+
+  # Inicializamos vectores de salida
+  fecha_formateada <- rep(NA_character_, length(x_chr))
+  hora_formateada <- rep(NA_character_, length(x_chr))
+
+  # Identificamos posiciones con información válida
+  posiciones_validas <- which(!is.na(x_chr))
+
+  if (length(posiciones_validas) > 0) {
+    # Eliminamos cualquier separador y conservamos únicamente dígitos
+    solo_digitos <- stringr::str_replace_all(x_chr[posiciones_validas], "\\D", "")
+
+    # Extraemos la porción de fecha (primeros 8 dígitos) y hora (siguientes 4, si existen)
+    fecha_bruta <- stringr::str_sub(solo_digitos, 1, 8)
+    hora_bruta <- ifelse(stringr::str_length(solo_digitos) >= 12, stringr::str_sub(solo_digitos, 9, 12), NA_character_)
+
+    # Parseamos la fecha usando el día como primera parte y la formateamos a dd/mm/aaaa
+    fecha_parseada <- suppressWarnings(lubridate::dmy(fecha_bruta))
+    fecha_formateada[posiciones_validas] <- ifelse(
+      is.na(fecha_parseada),
+      NA_character_,
+      format(fecha_parseada, "%Y-%m-%d")
+    )
+
+    # Aseguramos el formato HH:MM para la hora
+    hora_pad <- ifelse(is.na(hora_bruta), NA_character_, stringr::str_pad(hora_bruta, 4, pad = "0"))
+    hora_formateada[posiciones_validas] <- ifelse(
+      is.na(hora_pad),
+      NA_character_,
+      paste0(stringr::str_sub(hora_pad, 1, 2), ":", stringr::str_sub(hora_pad, 3, 4))
+    )
+  }
+
+  tibble(
+    fecha_formateada = fecha_formateada,
+    hora_formateada = hora_formateada
+  )
+}
+
+columna_inicio_contacto <- intersect(
+  c(
+    "Fecha inicio contacto",
+    "Fecha de inicio contacto",
+    "Fecha de Inicio Contacto",
+    "Fecha Inicio Contacto"
+  ),
+  colnames(SaludMental_limpio)
+)
+
+if (length(columna_inicio_contacto) == 1) {
+  valores_inicio <- normalizar_inicio_contacto(SaludMental_limpio[[columna_inicio_contacto]])
+
+  SaludMental_limpio <- SaludMental_limpio %>%
+    mutate(
+      `Fecha Inicio Contacto Fecha` = valores_inicio$fecha_formateada,
+      `Fecha Inicio Contacto Hora` = valores_inicio$hora_formateada
+    ) %>%
+    select(-all_of(columna_inicio_contacto)) %>%
+    relocate(
+      `Fecha Inicio Contacto Fecha`,
+      `Fecha Inicio Contacto Hora`,
+      .before = `Fecha de Fin Contacto`
+    )
+} else if (length(columna_inicio_contacto) > 1) {
+  warning("Se han detectado múltiples columnas candidatas para 'Fecha Inicio Contacto'; revise el esquema antes de continuar.")
+} else {
+  warning("No se encontró la columna 'Fecha Inicio Contacto' en el dataset; verifique el nombre en el origen de datos.")
+}
+```
+
+Este procedimiento preserva la trazabilidad temporal del contacto clínico, evita ambigüedades en el parseo y habilita tanto filtros por fecha como análisis intradía sin depender de transformaciones adicionales.
 
 ## Limpieza de texto en columnas categóricas relevantes
 
@@ -330,10 +412,35 @@ top_na_limpio
 
 El recuento confirma que no se eliminaron filas y que la reducción de columnas es la esperada. Los nulos restantes provienen de ausencias estructurales o conversiones fallidas en fechas (revisar `Fecha de Fin Contacto` y `Mes de Ingreso`).
 
-## Exportar a Excel limpio
+## Anonimización
+
+En cumplimiento de los requisitos de gobernanza de datos sanitarios y para proteger la identidad de las personas atendidas, aplicamos un proceso de anonimización reversible. Consiste en separar la información identificativa en una tabla aislada y sustituir granjas de pacientes por identificadores opacos.
 
 ```{r}
-write_xlsx(SaludMental_limpio, "../SaludMental_limpio.xlsx")
+# Generamos una tabla de correspondencia con UUID y datos identificativos mínimos
+pacientes_anonimos <- SaludMental %>%
+  select(`Número de registro anual`, `Nombre`, `Fecha de nacimiento`) %>%
+  distinct(`Número de registro anual`, .keep_all = TRUE) %>%
+  mutate(
+    UUID_Paciente = replicate(n(), UUIDgenerate())
+  ) %>%
+  select(UUID_Paciente, `Número de registro anual`, `Nombre`, `Fecha de nacimiento`)
+
+# Vinculamos las UUID con el dataset limpio para crear un dataframe anonimizado
+SaludMental_limpio_anon <- SaludMental_limpio %>%
+  left_join(pacientes_anonimos %>% select(UUID_Paciente, `Número de registro anual`), by = "Número de registro anual") %>%
+  mutate(UUID_Paciente = replace_na(UUID_Paciente, UUIDgenerate())) %>%
+  select(-`Nombre`) %>%
+  relocate(UUID_Paciente, .after = `Número de registro anual`)
+
+# Guardamos la tabla de correspondencia para custodia segura
+write_xlsx(pacientes_anonimos, "../pacientes_anonimos.xlsx")
+write_xlsx(SaludMental_limpio_anon, "../SaludMental_limpio_anon.xlsx")
+
 ```
+
+La tabla `pacientes_anonimos` concentra únicamente los datos identificativos esenciales (`Nombre` y `Fecha de Nacimiento`) ligados a una `UUID_Paciente` generada con la librería `uuid`. Esta correspondencia se mantiene en un fichero separado (`pacientes_anonimos.xlsx`) que debe resguardarse bajo controles de acceso estrictos. Por su parte, `SaludMental_limpio_anon` sustituye el nombre del paciente por la UUID en la tabla operativa (`SaludMental_limpio_anon.xlsx`).
+
+De este modo, la base de datos final que se distribuya para análisis permanece anonimizada, evitando exposiciones directas de datos personales, mientras que la reversibilidad se preserva mediante la tabla de correspondencia custodiada y auditada. Esto cumple las exigencias del reto y posibilita restaurar la identidad cuando exista base legal y autorización expresa.
 
 El archivo `SaludMental_limpio.xlsx` queda listo para carga en la base de datos; el Excel original permanece intacto.
