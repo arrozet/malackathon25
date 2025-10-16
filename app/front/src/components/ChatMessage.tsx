@@ -11,6 +11,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { ChatMessage as ChatMessageType } from '../types/chat'
 import MermaidRenderer from './MermaidRenderer'
+import { getToolInfo } from '../utils/toolIcons'
 
 /**
  * Props for the ChatMessage component.
@@ -103,11 +104,25 @@ export default function ChatMessage({ message }: ChatMessageProps): ReactElement
           {/* Show tools used by assistant */}
           {isAssistant && message.toolsUsed && message.toolsUsed.length > 0 && (
             <div className="chat-message__tools" aria-label="Herramientas utilizadas">
-              {message.toolsUsed.map((tool, index) => (
-                <span key={index} className="chat-message__tool-badge">
-                  {tool}
-                </span>
-              ))}
+              {message.toolsUsed.map((tool, index) => {
+                const toolInfo = getToolInfo(tool)
+                return (
+                  <span 
+                    key={index} 
+                    className="chat-message__tool-badge"
+                    style={{ color: toolInfo.color }}
+                    title={toolInfo.name}
+                    aria-label={toolInfo.name}
+                  >
+                    <span className="chat-message__tool-icon" aria-hidden="true">
+                      {toolInfo.icon}
+                    </span>
+                    <span className="chat-message__tool-name">
+                      {toolInfo.name}
+                    </span>
+                  </span>
+                )
+              })}
             </div>
           )}
         </div>
