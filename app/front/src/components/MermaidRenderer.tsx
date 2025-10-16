@@ -4,10 +4,13 @@
  * This component takes Mermaid diagram code and renders it as an SVG diagram.
  * It uses the mermaid library to parse and render the diagrams with proper
  * error handling and accessibility features.
+ * Includes fullscreen modal for better viewing of complex diagrams.
  */
 
 import { useEffect, useRef, useState, type ReactElement } from 'react'
 import mermaid from 'mermaid'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faExpand, faTimes } from '@fortawesome/free-solid-svg-icons'
 
 /**
  * Props for the MermaidRenderer component.
@@ -75,9 +78,32 @@ export default function MermaidRenderer({ chart, id }: MermaidRendererProps): Re
   const containerRef = useRef<HTMLDivElement>(null)
   const [svg, setSvg] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  const [isExpanded, setIsExpanded] = useState<boolean>(false)
   
   // Generate unique ID for this diagram
   const diagramId = useRef(id || `mermaid-${Math.random().toString(36).substr(2, 9)}`).current
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isExpanded) {
+        setIsExpanded(false)
+      }
+    }
+
+    if (isExpanded) {
+      document.addEventListener('keydown', handleEscape)
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = ''
+    }
+  }, [isExpanded])
 
   useEffect(() => {
     let cancelled = false
@@ -177,19 +203,65 @@ export default function MermaidRenderer({ chart, id }: MermaidRendererProps): Re
     )
   }
 
-  // Render the diagram
+  // Render the diagram with expand button
   return (
-    <div 
-      ref={containerRef}
-      className="mermaid-diagram"
-      role="img"
-      aria-label="Diagrama Mermaid"
-    >
+    <>
       <div 
-        className="mermaid-diagram__content"
-        dangerouslySetInnerHTML={{ __html: svg }}
-      />
-    </div>
+        ref={containerRef}
+        className="mermaid-diagram"
+        role="img"
+        aria-label="Diagrama Mermaid"
+      >
+        <button
+          className="mermaid-diagram__expand-btn"
+          onClick={() => setIsExpanded(true)}
+          aria-label="Ampliar diagrama"
+          title="Ver diagrama ampliado"
+        >
+          <FontAwesomeIcon icon={faExpand} />
+        </button>
+        <div 
+          className="mermaid-diagram__content"
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
+      </div>
+
+      {/* Fullscreen Modal */}
+      {isExpanded && (
+        <div 
+          className="mermaid-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mermaid-modal-title"
+          onClick={() => setIsExpanded(false)}
+        >
+          <div className="mermaid-modal__backdrop" aria-hidden="true" />
+          <div className="mermaid-modal__container">
+            <div 
+              className="mermaid-modal__content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mermaid-modal__header">
+                <h2 id="mermaid-modal-title" className="mermaid-modal__title">
+                  Diagrama Ampliado
+                </h2>
+                <button
+                  className="mermaid-modal__close-btn"
+                  onClick={() => setIsExpanded(false)}
+                  aria-label="Cerrar diagrama ampliado"
+                >
+                  <FontAwesomeIcon icon={faTimes} />
+                </button>
+              </div>
+              <div 
+                className="mermaid-modal__diagram"
+                dangerouslySetInnerHTML={{ __html: svg }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
