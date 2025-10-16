@@ -714,3 +714,18 @@ write_csv(ingreso_procedimientos, "./salidas/Ingreso_Procedimientos.csv")
 
 Persistimos cada tabla en formato CSV dentro de `salidas/`. Este formato es el esperado por `DBMS_CLOUD.COPY_DATA`, facilitando una ingesta directa en Oracle Autonomous Database sin transformaciones adicionales.
 
+```{r}
+write_xlsx(comunidades_autonomas_tbl, "./salidas/Comunidades_Autonomas.xlsx")
+write_xlsx(paises_tbl, "./salidas/Paises.xlsx")
+write_xlsx(centros_tbl, "./salidas/Centros.xlsx")
+write_xlsx(grd_apr_tbl, "./salidas/GRD_APR.xlsx")
+write_xlsx(diagnosticos_tbl, "./salidas/Diagnosticos.xlsx")
+write_xlsx(procedimientos_tbl, "./salidas/Procedimientos.xlsx")
+write_xlsx(pacientes_tbl, "./salidas/Pacientes.xlsx")
+write_xlsx(ingresos_tbl, "./salidas/Ingresos.xlsx")
+write_xlsx(ingreso_diagnosticos_tbl, "./salidas/Ingreso_Diagnosticos.xlsx")
+write_xlsx(ingreso_procedimientos_tbl, "./salidas/Ingreso_Procedimientos.xlsx")
+```
+
+Además conservamos un Excel consolidado con todas las tablas normalizadas para auditoría y validaciones rápidas fuera del entorno Oracle.
+
