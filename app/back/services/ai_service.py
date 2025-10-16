@@ -134,7 +134,7 @@ class AIService:
         # Set entry point
         workflow.set_entry_point("orchestrator")
         
-        # Add conditional edges from orchestrator to specialists
+        # Add conditional edges from orchestrator to first specialist or synthesizer
         workflow.add_conditional_edges(
             "orchestrator",
             self._route_to_specialists,
@@ -147,11 +147,52 @@ class AIService:
             }
         )
         
-        # All specialists go to synthesizer
-        workflow.add_edge("sql_specialist", "synthesizer")
-        workflow.add_edge("search_specialist", "synthesizer")
-        workflow.add_edge("python_specialist", "synthesizer")
-        workflow.add_edge("diagram_specialist", "synthesizer")
+        # After each specialist, check if there are more specialists to execute
+        # If yes, go to next specialist; if no, go to synthesizer
+        # NOTE: Specialists cannot route back to themselves to avoid infinite loops
+        workflow.add_conditional_edges(
+            "sql_specialist",
+            self._route_to_next_specialist,
+            {
+                "search_specialist": "search_specialist",
+                "python_specialist": "python_specialist",
+                "diagram_specialist": "diagram_specialist",
+                "synthesizer": "synthesizer",
+            }
+        )
+        
+        workflow.add_conditional_edges(
+            "search_specialist",
+            self._route_to_next_specialist,
+            {
+                "sql_specialist": "sql_specialist",
+                "python_specialist": "python_specialist",
+                "diagram_specialist": "diagram_specialist",
+                "synthesizer": "synthesizer",
+            }
+        )
+        
+        workflow.add_conditional_edges(
+            "python_specialist",
+            self._route_to_next_specialist,
+            {
+                "sql_specialist": "sql_specialist",
+                "search_specialist": "search_specialist",
+                "diagram_specialist": "diagram_specialist",
+                "synthesizer": "synthesizer",
+            }
+        )
+        
+        workflow.add_conditional_edges(
+            "diagram_specialist",
+            self._route_to_next_specialist,
+            {
+                "sql_specialist": "sql_specialist",
+                "search_specialist": "search_specialist",
+                "python_specialist": "python_specialist",
+                "synthesizer": "synthesizer",
+            }
+        )
         
         # Synthesizer is the end
         workflow.add_edge("synthesizer", END)
@@ -173,35 +214,60 @@ class AIService:
     
     def _route_to_specialists(self, state: AgentState) -> str:
         """
-        Conditional routing function.
+        Conditional routing function from orchestrator.
         
         Routes to the first specialist in the routing decision.
-        LangGraph will handle invoking multiple specialists if needed.
         """
         routing_decision = state.get("routing_decision", [])
         
         if not routing_decision:
             # No specialists needed, go directly to synthesizer
+            logger.info("No specialists needed, routing to synthesizer")
             return "synthesizer"
         
-        # For now, we'll route to the first specialist
-        # TODO: Implement parallel specialist execution for better performance
+        # Route to the first specialist
         first_specialist = routing_decision[0]
-        
-        logger.info(f"Routing to: {first_specialist}")
+        logger.info(f"Routing to first specialist: {first_specialist}")
         
         return first_specialist
+    
+    def _route_to_next_specialist(self, state: AgentState) -> str:
+        """
+        Routes to the next specialist in the queue or to synthesizer if done.
+        
+        This function is called after each specialist completes to determine
+        if there are more specialists to execute.
+        
+        Args:
+            state (AgentState): Current agent state.
+        
+        Returns:
+            str: Next node to route to (specialist name or "synthesizer").
+        """
+        routing_decision = state.get("routing_decision", [])
+        
+        if not routing_decision or len(routing_decision) == 0:
+            # No more specialists to execute, go to synthesizer
+            logger.info("All specialists completed, routing to synthesizer")
+            return "synthesizer"
+        
+        # Get the next specialist
+        next_specialist = routing_decision[0]
+        logger.info(f"Routing to next specialist: {next_specialist} (remaining: {routing_decision})")
+        
+        return next_specialist
     
     def _sql_specialist_node(self, state: AgentState) -> AgentState:
         """Node for SQL specialist agent."""
         logger.info("Executing SQL specialist node...")
         result = self.sql_specialist.execute(state["user_query"], state)
         
-        # Check if we need to route to more specialists
-        routing_decision = state.get("routing_decision", [])
+        # Remove this specialist from routing decision (it's now complete)
+        routing_decision = state.get("routing_decision", []).copy()
         if "sql_specialist" in routing_decision:
             routing_decision.remove("sql_specialist")
             state["routing_decision"] = routing_decision
+            logger.info(f"SQL specialist complete. Remaining specialists: {routing_decision}")
         
         # Merge specialist summaries
         if "specialist_summaries" not in state:
@@ -215,11 +281,12 @@ class AIService:
         logger.info("Executing search specialist node...")
         result = self.search_specialist.execute(state["user_query"], state)
         
-        # Update routing decision
-        routing_decision = state.get("routing_decision", [])
+        # Remove this specialist from routing decision (it's now complete)
+        routing_decision = state.get("routing_decision", []).copy()
         if "search_specialist" in routing_decision:
             routing_decision.remove("search_specialist")
             state["routing_decision"] = routing_decision
+            logger.info(f"Search specialist complete. Remaining specialists: {routing_decision}")
         
         # Merge specialist summaries
         if "specialist_summaries" not in state:
@@ -233,11 +300,12 @@ class AIService:
         logger.info("Executing Python specialist node...")
         result = self.python_specialist.execute(state["user_query"], state)
         
-        # Update routing decision
-        routing_decision = state.get("routing_decision", [])
+        # Remove this specialist from routing decision (it's now complete)
+        routing_decision = state.get("routing_decision", []).copy()
         if "python_specialist" in routing_decision:
             routing_decision.remove("python_specialist")
             state["routing_decision"] = routing_decision
+            logger.info(f"Python specialist complete. Remaining specialists: {routing_decision}")
         
         # Merge specialist summaries
         if "specialist_summaries" not in state:
@@ -251,11 +319,12 @@ class AIService:
         logger.info("Executing diagram specialist node...")
         result = self.diagram_specialist.execute(state["user_query"], state)
         
-        # Update routing decision
-        routing_decision = state.get("routing_decision", [])
+        # Remove this specialist from routing decision (it's now complete)
+        routing_decision = state.get("routing_decision", []).copy()
         if "diagram_specialist" in routing_decision:
             routing_decision.remove("diagram_specialist")
             state["routing_decision"] = routing_decision
+            logger.info(f"Diagram specialist complete. Remaining specialists: {routing_decision}")
         
         # Merge specialist summaries
         if "specialist_summaries" not in state:
