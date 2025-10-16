@@ -6,7 +6,7 @@
  * age groups, and length of stay.
  */
 
-import type { ReactElement } from 'react'
+import { type ReactElement, useState, useEffect } from 'react'
 import {
   BarChart,
   Bar,
@@ -46,6 +46,27 @@ interface DataChartsProps {
  */
 export default function DataCharts({ data }: DataChartsProps): ReactElement {
   /**
+   * Hook to detect if the screen is mobile-sized.
+   * Updates on window resize to ensure responsive behavior.
+   */
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    // Check on mount
+    checkMobile()
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobile)
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  /**
    * Custom tooltip component for displaying detailed chart information.
    * 
    * @param props - Tooltip properties
@@ -83,11 +104,14 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
       {/* Category distribution bar chart */}
       <div className="chart-card">
         <h3 className="chart-title">Distribución por categoría diagnóstica</h3>
-        <ResponsiveContainer width="100%" height={500}>
+        <ResponsiveContainer width="100%" height={isMobile ? 600 : 500}>
           <BarChart 
             data={data.categories} 
             layout="vertical"
-            margin={{ top: 20, right: 30, left: 280, bottom: 20 }}
+            margin={isMobile 
+              ? { top: 20, right: 10, left: 10, bottom: 20 }
+              : { top: 20, right: 30, left: 20, bottom: 20 }
+            }
           >
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
             <XAxis type="number" stroke={COLORS.text} />
@@ -95,8 +119,9 @@ export default function DataCharts({ data }: DataChartsProps): ReactElement {
               type="category" 
               dataKey="category" 
               stroke={COLORS.text}
-              width={260}
-              style={{ fontSize: '13px' }}
+              width={isMobile ? 120 : 260}
+              style={{ fontSize: isMobile ? '10px' : '13px' }}
+              tick={{ width: isMobile ? 120 : 260 }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
