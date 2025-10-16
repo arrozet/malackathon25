@@ -112,4 +112,103 @@ class DataVisualization(BaseModel):
     filters_applied: DataFilters = Field(..., description="Filters used for this visualization")
 
 
+# =====================================================================
+# AI Service Schemas
+# =====================================================================
+
+class ChatMessage(BaseModel):
+    """Individual chat message in conversation history."""
+    
+    role: str = Field(..., description="Message role: 'user' or 'assistant'")
+    content: str = Field(..., description="Message content")
+
+
+class AIChatRequest(BaseModel):
+    """Request schema for AI chat endpoint."""
+    
+    message: str = Field(..., description="User's message to the AI assistant")
+    chat_history: List[ChatMessage] | None = Field(
+        default=[],
+        description="Previous conversation history"
+    )
+
+
+class IntermediateStep(BaseModel):
+    """Intermediate step taken by the AI agent."""
+    
+    tool: str = Field(..., description="Tool name used")
+    tool_input: str | dict = Field(..., description="Input provided to the tool")
+    output: str = Field(..., description="Output from the tool")
+
+
+class AIChatResponse(BaseModel):
+    """Response schema for AI chat endpoint."""
+    
+    response: str = Field(..., description="AI assistant's response message")
+    tool_calls: List[str] = Field(
+        default=[],
+        description="List of tools used to generate the response"
+    )
+    intermediate_steps: List[IntermediateStep] = Field(
+        default=[],
+        description="Detailed steps taken by the agent"
+    )
+
+
+class AIAnalysisRequest(BaseModel):
+    """Request schema for AI analysis endpoint."""
+    
+    query: str = Field(
+        ...,
+        description="Analytical question about the mental health data"
+    )
+
+
+class AIAnalysisResponse(BaseModel):
+    """Response schema for AI analysis endpoint."""
+    
+    response: str = Field(..., description="Analysis results and insights")
+    tool_calls: List[str] = Field(
+        default=[],
+        description="List of tools used in the analysis"
+    )
+    intermediate_steps: List[IntermediateStep] = Field(
+        default=[],
+        description="Detailed analysis steps"
+    )
+
+
+class AIVisualizationRequest(BaseModel):
+    """Request schema for AI visualization endpoint."""
+    
+    description: str = Field(
+        ...,
+        description="Description of the diagram to generate"
+    )
+
+
+class AIVisualizationResponse(BaseModel):
+    """Response schema for AI visualization endpoint."""
+    
+    mermaid_code: str = Field(..., description="Mermaid diagram syntax code")
+    description: str = Field(..., description="Original description request")
+
+
+class AIHealthResponse(BaseModel):
+    """Response schema for AI health check endpoint."""
+    
+    status: str = Field(
+        ...,
+        description="Overall health status: 'healthy', 'degraded', or 'unhealthy'"
+    )
+    components: dict[str, bool] = Field(
+        ...,
+        description="Health status of individual components"
+    )
+    error: str | None = Field(
+        default=None,
+        description="Error message if service is unhealthy"
+    )
+
+
 
