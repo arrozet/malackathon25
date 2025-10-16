@@ -69,6 +69,21 @@ function App(): ReactElement {
               {item.label}
             </a>
           ))}
+          <a href="/chat" className="nav__link nav__link--primary">
+            <svg 
+              className="nav__link-icon" 
+              width="16" 
+              height="16" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Chat IA
+          </a>
         </nav>
       </header>
 
@@ -95,6 +110,26 @@ function App(): ReactElement {
               ingesta de datos, acelera la segmentación y presenta heurísticas accionables para
               comités clínicos.
             </p>
+            <div className="hero__actions">
+              <a href="/chat" className="btn btn--primary">
+                <svg 
+                  className="btn__icon" 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2"
+                  aria-hidden="true"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                Pregunta a Brain IA
+              </a>
+              <a href="#explorer" className="btn btn--secondary">
+                Explorar datos
+              </a>
+            </div>
             <div className="hero__highlight-stack" aria-live="polite">
               {highlightPhrases.length > 0 ? (
                 highlightPhrases.map((phrase) => (

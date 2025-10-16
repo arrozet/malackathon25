@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+    #!/usr/bin/env python3
 """
 Chat interactivo con Brain via HTTP endpoints.
 

@@ -474,4 +474,117 @@ h1 {
     width: min(100%, 240px);
   }
 
+  .hero__actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+/* =====================================================
+   NAVIGATION CHAT LINK (PRIMARY)
+   ===================================================== */
+
+.nav__link--primary {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: #ffffff;
+  font-weight: 600;
+  gap: 0.5rem;
+}
+
+.nav__link--primary:hover,
+.nav__link--primary:focus {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+}
+
+.nav__link-icon {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   HERO ACTIONS
+   ===================================================== */
+
+.hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* =====================================================
+   BUTTONS
+   ===================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: all 200ms ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+  min-height: 44px; /* WCAG AAA - Área táctil mínima */
+  white-space: nowrap;
+}
+
+.btn:focus {
+  outline: 3px solid #7c3aed;
+  outline-offset: 3px;
+}
+
+.btn__icon {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Primary Button - Solid Purple */
+.btn--primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+}
+
+.btn--primary:hover {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn--primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+/* Secondary Button - Outline */
+.btn--secondary {
+  background: rgba(124, 58, 237, 0.08);
+  border-color: rgba(124, 58, 237, 0.4);
+  color: #c4b5fd;
+}
+
+.btn--secondary:hover {
+  background: rgba(124, 58, 237, 0.18);
+  border-color: #7c3aed;
+  color: #ede9fe;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.btn--secondary:active {
+  background: rgba(124, 58, 237, 0.25);
 }

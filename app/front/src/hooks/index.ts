@@ -7,4 +7,5 @@
 export * from './useInsights'
 export * from './useVisualization'
 export * from './useCategories'
+export * from './useChatAI'
 

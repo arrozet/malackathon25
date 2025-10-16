@@ -9,4 +9,5 @@ export * from './client'
 export * from './insights.api'
 export * from './visualization.api'
 export * from './categories.api'
+export * from './chat.api'
 
